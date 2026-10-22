@@ -5,6 +5,8 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 import './styles.css';
 
 type Workspace = { id: string; name: string; slug: string; created_at: string };
+type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; updated_at: string };
+type Issue = { id: string; title: string; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null };
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -14,7 +16,12 @@ function App() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [workspaceName, setWorkspaceName] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [selectedWorkspace, setSelectedWorkspace] = useState('');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -30,13 +37,25 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) { setWorkspaces([]); return; }
+    if (!session) { setWorkspaces([]); setProjects([]); setIssues([]); return; }
     void loadWorkspaces();
   }, [session]);
 
   async function loadWorkspaces() {
     const { data, error } = await supabase.from('workspaces').select('id,name,slug,created_at').order('created_at', { ascending: false });
-    if (error) setError(error.message); else setWorkspaces(data ?? []);
+    if (error) { setError(error.message); return; }
+    const nextWorkspaces = (data ?? []) as Workspace[];
+    setWorkspaces(nextWorkspaces);
+    setSelectedWorkspace(current => current && nextWorkspaces.some(w => w.id === current) ? current : (nextWorkspaces[0]?.id ?? ''));
+    if (!nextWorkspaces.length) { setProjects([]); setIssues([]); return; }
+    const { data: projectData, error: projectError } = await supabase.from('projects').select('id,name,key,description,status,workspace_id,updated_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('updated_at', { ascending: false });
+    if (projectError) { setError(projectError.message); return; }
+    const nextProjects = (projectData ?? []) as Project[];
+    setProjects(nextProjects);
+    if (!nextProjects.length) { setIssues([]); return; }
+    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,issue_number,status,priority,updated_at,project_id,due_date').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
+    if (issueError) setError(issueError.message);
+    else setIssues((issueData ?? []) as Issue[]);
   }
 
   async function authenticate(event: FormEvent) {
