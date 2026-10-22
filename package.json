@@ -40,11 +40,11 @@
     "esbuild": "^0.25.0",
     "typescript": "5.9.3",
     "vite": "^7.1.7",
-    "vitest": "^2.1.4"
+    "vitest": "^2.1.4",
+    "drizzle-kit": "^0.31.4"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "drizzle-kit": "^0.31.4",
     "tsx": "^4.19.1"
   }
 }
