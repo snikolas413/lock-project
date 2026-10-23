@@ -370,7 +370,7 @@ function App() {
               </section>;
             })}
           </div> : <div className="task-table">
-            <div className="task-table-head"><span>Tarefa</span><span>Status</span><span>Prioridade</span><span>Prazo</span><span>Ações</span></div>
+            <div className="task-table-head"><span>Tarefa</span><span>Status</span><span>Responsável</span><span>Prioridade</span><span>Prazo</span><span>Etiquetas</span><span>Ações</span></div>
             {filteredIssues.length ? filteredIssues.map(issue => <article className="task-table-row" key={issue.id}>
               <div className="task-name"><strong>{issue.title}</strong><small>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}{issue.description ? ` · ${issue.description}` : ''}</small></div>
               <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={e => void moveIssueToStatus(issue, e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
