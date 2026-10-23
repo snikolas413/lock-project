@@ -7,6 +7,7 @@ import './styles.css';
 type Workspace = { id: string; name: string; slug: string; created_at: string };
 type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; updated_at: string };
 type Issue = { id: string; title: string; description: string | null; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null };
+type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -25,6 +26,10 @@ function App() {
   const [issueStatusFilter, setIssueStatusFilter] = useState('all');
   const [issuePriorityFilter, setIssuePriorityFilter] = useState('all');
   const [taskView, setTaskView] = useState<'list' | 'kanban'>('kanban');
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [issueComments, setIssueComments] = useState<IssueComment[]>([]);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentsLoading, setCommentsLoading] = useState(false);
   const [taskProject, setTaskProject] = useState('');
   const [taskStatus, setTaskStatus] = useState('backlog');
   const [taskPriority, setTaskPriority] = useState('medium');
@@ -68,6 +73,36 @@ function App() {
     const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,status,priority,updated_at,project_id,due_date').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else setIssues((issueData ?? []) as Issue[]);
+  }
+
+  useEffect(() => {
+    if (!selectedIssue || !session) { setIssueComments([]); return; }
+    let active = true;
+    setCommentsLoading(true);
+    supabase.from('issue_comments').select('id,issue_id,author_id,body,created_at').eq('issue_id', selectedIssue.id).order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) setError(error.message);
+        else setIssueComments((data ?? []) as IssueComment[]);
+        setCommentsLoading(false);
+      });
+    return () => { active = false; };
+  }, [selectedIssue?.id, session]);
+
+  async function addIssueComment(event: FormEvent) {
+    event.preventDefault();
+    if (!session?.user || !selectedIssue || !commentDraft.trim()) return;
+    setBusy(true); setError('');
+    const { error } = await supabase.from('issue_comments').insert({ issue_id: selectedIssue.id, author_id: session.user.id, body: commentDraft.trim() });
+    if (error) setError(error.message);
+    else {
+      setCommentDraft('');
+      const { data, error: loadError } = await supabase.from('issue_comments').select('id,issue_id,author_id,body,created_at').eq('issue_id', selectedIssue.id).order('created_at', { ascending: true });
+      if (loadError) setError(loadError.message);
+      else setIssueComments((data ?? []) as IssueComment[]);
+      setMessage('Comentário adicionado.');
+    }
+    setBusy(false);
   }
 
   async function authenticate(event: FormEvent) {
@@ -242,7 +277,7 @@ function App() {
                     <strong className="kanban-card-title">{issue.title}</strong>
                     {issue.description && <p className="kanban-card-description">{issue.description}</p>}
                     <div className="kanban-card-meta"><span>{projects.find(p => p.id === issue.project_id)?.name ?? 'Projeto'}</span><span>{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span></div>
-                    <div className="kanban-card-actions"><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
+                    <div className="kanban-card-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários ({issueComments.filter(c => c.issue_id === issue.id).length || '+'})</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
                   </article>)}
                   {!columnIssues.length && <div className="kanban-empty">Solte uma tarefa aqui</div>}
                 </div>
@@ -255,7 +290,7 @@ function App() {
               <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={e => void moveIssueToStatus(issue, e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
               <select aria-label={`Prioridade de ${issue.title}`} value={issue.priority} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ priority: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select>
               <span className="task-due">{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span>
-              <div className="task-actions"><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
+              <div className="task-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
           </div>}
         </section>
@@ -263,6 +298,16 @@ function App() {
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card" key={w.id}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
           <form className="workspace-form" onSubmit={createWorkspace}><label htmlFor="workspace-name">Criar workspace</label><div className="form-row"><input id="workspace-name" value={workspaceName} onChange={e=>setWorkspaceName(e.target.value)} placeholder="Ex.: Produto, Marketing, Minha equipe" maxLength={120} required/><button className="button button-primary" disabled={busy}>{busy?'Criando…':'Criar workspace'} ↗</button></div></form>
         </section>
+        {selectedIssue && <div className="issue-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setSelectedIssue(null); }}>
+          <section className="issue-modal" role="dialog" aria-modal="true" aria-labelledby="issue-modal-title">
+            <header className="issue-modal-header"><div><p className="eyebrow">DISCUSSÃO DA TAREFA</p><h2 id="issue-modal-title">{selectedIssue.title}</h2><p className="muted">{projects.find(p => p.id === selectedIssue.project_id)?.key ?? 'TASK'}-{selectedIssue.issue_number}</p></div><button type="button" className="text-button" onClick={() => setSelectedIssue(null)}>Fechar ✕</button></header>
+            {selectedIssue.description && <p className="issue-modal-description">{selectedIssue.description}</p>}
+            <div className="comments-list">
+              {commentsLoading ? <p className="muted">Carregando comentários…</p> : issueComments.length ? issueComments.map(comment => <article className="comment-item" key={comment.id}><div className="comment-avatar">{comment.author_id === session?.user.id ? 'V' : 'M'}</div><div className="comment-content"><div className="comment-meta"><strong>{comment.author_id === session?.user.id ? 'Você' : 'Membro da equipe'}</strong><time>{new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(comment.created_at))}</time></div><p>{comment.body}</p></div></article>) : <div className="kanban-empty">Nenhum comentário ainda. Comece a conversa.</div>}
+            </div>
+            <form className="comment-form" onSubmit={addIssueComment}><label htmlFor="comment-draft">Adicionar comentário</label><textarea id="comment-draft" value={commentDraft} onChange={event => setCommentDraft(event.target.value)} placeholder="Compartilhe uma atualização ou dúvida…" rows={3} maxLength={10000} required/><button className="button button-primary" disabled={busy || !commentDraft.trim()}>{busy ? 'Enviando…' : 'Publicar comentário'} ↗</button></form>
+          </section>
+        </div>}
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}{message && <p className="feedback feedback-success" role="status">{message}</p>}
       </div> : <div className="auth-layout">
         <div className="auth-intro"><p className="eyebrow">UM ESPAÇO PARA FAZER ACONTECER</p><h2>Menos ruído.<br/><span>Mais movimento.</span></h2><p>Seu ponto de partida para projetos mais claros, equipes alinhadas e entregas consistentes.</p><div className="feature-line"><span>01</span><div><strong>Organização que escala</strong><small>Workspaces para cada equipe e iniciativa.</small></div></div><div className="feature-line"><span>02</span><div><strong>Progresso visível</strong><small>Um caminho claro do plano à entrega.</small></div></div></div>
