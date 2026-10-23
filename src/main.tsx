@@ -74,7 +74,7 @@ function App() {
     if (projectError) { setError(projectError.message); return; }
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
-    if (!nextProjects.length) { setIssues([]); return; }
+    if (!nextProjects.length) { setIssues([]); setLabels([]); return; }
     const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,status,priority,updated_at,project_id,due_date').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else setIssues((issueData ?? []) as Issue[]);
