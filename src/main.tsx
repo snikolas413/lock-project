@@ -92,11 +92,12 @@ function App() {
 
   async function saveIssue(event: FormEvent) {
     event.preventDefault();
-    if (!session?.user || !taskProject || !taskTitle.trim()) return;
+    const projectId = taskProject || projects[0]?.id;
+    if (!session?.user || !projectId || !taskTitle.trim()) return;
     setBusy(true); setError(''); setMessage('');
     const payload = {
       title: taskTitle.trim(),
-      project_id: taskProject,
+      project_id: projectId,
       status: taskStatus,
       priority: taskPriority,
       due_date: taskDueDate || null,
