@@ -70,3 +70,14 @@
 .label-chip button:disabled{opacity:.4}
 @media(max-width:760px){.label-create-form{grid-template-columns:repeat(2,minmax(0,1fr))}.label-create-form .button{justify-self:start}}
 @media(max-width:480px){.label-management{padding:12px}.label-create-form{grid-template-columns:minmax(0,1fr) 76px}.label-create-form .field:first-child,.label-create-form .field:nth-child(2){grid-column:span 2}.label-create-form .button{grid-column:span 2}}
+
+
+/* Task-label associations */
+.issue-labels{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.issue-label-toggle{display:inline-flex;align-items:center;gap:3px;border:1px solid;border-radius:999px;background:#ffffff04;padding:4px 7px;font:inherit;font-size:9px;line-height:1.3;cursor:pointer;transition:background .15s ease,opacity .15s ease}
+.issue-label-toggle.selected{background:#ffffff0c;font-weight:700}
+.issue-label-toggle:disabled{opacity:.5;cursor:wait}
+.task-row-labels{margin:0;align-content:center}
+.task-filters .field{min-width:0}
+@media(min-width:1000px){.task-filters{grid-template-columns:minmax(190px,1.5fr) repeat(4,minmax(120px,1fr)) auto}}
+@media(max-width:760px){.task-row-labels{grid-column:1/-1;margin-top:0}}
