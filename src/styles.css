@@ -53,3 +53,20 @@
 
 /* Issue discussion modal */
 .issue-modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:#03060bd9;backdrop-filter:blur(7px)}.issue-modal{width:min(680px,100%);max-height:min(86vh,850px);overflow:auto;padding:24px;border:1px solid #ffffff1c;border-radius:16px;background:#111720;box-shadow:0 24px 80px #0008}.issue-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:16px;border-bottom:1px solid #ffffff12}.issue-modal-header h2{margin:6px 0;font-size:22px;overflow-wrap:anywhere}.issue-modal-header .muted{margin:4px 0}.issue-modal-description{color:#a8b1bd;line-height:1.65;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}.comments-list{display:grid;gap:14px;margin:18px 0;max-height:38vh;overflow:auto}.comment-item{display:flex;gap:11px;padding:13px;border:1px solid #ffffff10;border-radius:10px;background:#0c1118}.comment-avatar{flex:0 0 30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#c6f08b20;color:#c6f08b;font-weight:800;font-size:11px}.comment-content{min-width:0;flex:1}.comment-meta{display:flex;align-items:center;justify-content:space-between;gap:12px}.comment-meta strong{font-size:11px}.comment-meta time{color:#7f8996;font-size:10px}.comment-content p{margin:8px 0 0;color:#d1d7df;font-size:12px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}.comment-form{display:grid;gap:10px;padding-top:16px;border-top:1px solid #ffffff12}.comment-form label{font-size:11px;font-weight:700;color:#b5beca}.comment-form textarea{width:100%;resize:vertical;box-sizing:border-box;border:1px solid #ffffff1a;border-radius:9px;background:#0a0e14;color:#f1f3f6;padding:12px;font:inherit;font-size:12px;outline:none}.comment-form textarea:focus{border-color:#c6f08b80}.comment-form .button{justify-self:start}@media(max-width:520px){.issue-modal-backdrop{padding:10px}.issue-modal{padding:16px}.issue-modal-header h2{font-size:18px}.comment-meta{align-items:flex-start;flex-direction:column;gap:4px}}
+
+
+/* Project label management */
+.label-management{margin-top:24px;padding:16px;border:1px solid #ffffff12;border-radius:12px;background:#0d1219}
+.label-create-form{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(150px,1.4fr) 76px auto;align-items:end;gap:12px;margin-top:14px}
+.label-create-form .field{display:grid;gap:7px;min-width:0}
+.label-create-form label{color:#929cab;font-size:10px;font-weight:700}
+.label-create-form input:not([type=color]),.label-create-form select{width:100%;min-width:0;box-sizing:border-box;border:1px solid #ffffff1a;background:#0c1016;color:#f1f3f6;border-radius:8px;padding:10px 11px;font:inherit;font-size:11px;outline:none;color-scheme:dark}
+.label-create-form input:focus,.label-create-form select:focus{border-color:#c6f08b80}
+.label-create-form input[type=color]{width:100%;height:36px;padding:3px;border:1px solid #ffffff1a;border-radius:8px;background:#0c1016}
+.label-create-form .button{white-space:nowrap}
+.label-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.label-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid;border-radius:999px;background:#ffffff05;font-size:10px;font-weight:700}
+.label-chip button{border:0;background:transparent;color:inherit;font-size:15px;line-height:1;opacity:.8}
+.label-chip button:disabled{opacity:.4}
+@media(max-width:760px){.label-create-form{grid-template-columns:repeat(2,minmax(0,1fr))}.label-create-form .button{justify-self:start}}
+@media(max-width:480px){.label-management{padding:12px}.label-create-form{grid-template-columns:minmax(0,1fr) 76px}.label-create-form .field:first-child,.label-create-form .field:nth-child(2){grid-column:span 2}.label-create-form .button{grid-column:span 2}}
