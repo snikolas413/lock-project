@@ -285,7 +285,7 @@ function App() {
               <button className="button button-primary" disabled={busy || !projects.length || !labelName.trim()}>{busy ? 'Salvando…' : 'Criar etiqueta'} ↗</button>
             </form>
             <div className="label-list">
-              {labels.filter(label => !labelProject && !taskProject ? true : label.project_id === (labelProject || taskProject || projects[0]?.id)).map(label => <span className="label-chip" key={label.id} style={{'--label-color': label.color} as React.CSSProperties}><span>{label.name}</span><button type="button" aria-label={`Excluir etiqueta ${label.name}`} disabled={busy} onClick={() => void deleteLabel(label)}>×</button></span>)}
+              {labels.filter(label => !labelProject && !taskProject ? true : label.project_id === (labelProject || taskProject || projects[0]?.id)).map(label => <span className="label-chip" key={label.id} style={{color: label.color, borderColor: label.color}}><span>{label.name}</span><button type="button" aria-label={`Excluir etiqueta ${label.name}`} disabled={busy} onClick={() => void deleteLabel(label)}>×</button></span>)}
               {!labels.length && <p className="muted">Crie etiquetas para categorizar o trabalho por tipo, área ou contexto.</p>}
             </div>
           </section>
