@@ -18,6 +18,12 @@ function App() {
   const [workspaceName, setWorkspaceName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskProject, setTaskProject] = useState('');
+  const [taskStatus, setTaskStatus] = useState('backlog');
+  const [taskPriority, setTaskPriority] = useState('medium');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -84,6 +90,49 @@ function App() {
     setBusy(false);
   }
 
+  async function saveIssue(event: FormEvent) {
+    event.preventDefault();
+    if (!session?.user || !taskProject || !taskTitle.trim()) return;
+    setBusy(true); setError(''); setMessage('');
+    const payload = {
+      title: taskTitle.trim(),
+      project_id: taskProject,
+      status: taskStatus,
+      priority: taskPriority,
+      due_date: taskDueDate || null,
+    };
+    const result = editingIssueId
+      ? await supabase.from('issues').update(payload).eq('id', editingIssueId)
+      : await supabase.from('issues').insert({ ...payload, reporter_id: session.user.id });
+    if (result.error) setError(result.error.message);
+    else {
+      setTaskTitle(''); setTaskDueDate(''); setTaskStatus('backlog'); setTaskPriority('medium');
+      setEditingIssueId(null); setMessage(editingIssueId ? 'Tarefa atualizada.' : 'Tarefa criada com sucesso.');
+      await loadWorkspaces();
+    }
+    setBusy(false);
+  }
+
+  function startEditingIssue(issue: Issue) {
+    setEditingIssueId(issue.id);
+    setTaskTitle(issue.title);
+    setTaskProject(issue.project_id);
+    setTaskStatus(issue.status);
+    setTaskPriority(issue.priority);
+    setTaskDueDate(issue.due_date ?? '');
+    setError(''); setMessage('');
+    document.getElementById('task-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  async function deleteIssue(issue: Issue) {
+    if (!window.confirm(`Excluir a tarefa "${issue.title}"? Esta ação não pode ser desfeita.`)) return;
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await supabase.from('issues').delete().eq('id', issue.id);
+    if (error) setError(error.message);
+    else { setMessage('Tarefa excluída.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
   async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) setError(error.message);
@@ -122,6 +171,31 @@ function App() {
             <div className="progress-card"><div className="progress-top"><div><span className="stat-label">Progresso geral</span><strong>{issues.length ? Math.round(issues.filter(i=>['done','completed','closed','concluido','concluído'].includes(i.status.toLowerCase())).length/issues.length*100):0}%</strong></div><span className="progress-check">✓</span></div><div className="progress-track"><span style={{width:(issues.length?issues.filter(i=>['done','completed','closed','concluido','concluído'].includes(i.status.toLowerCase())).length/issues.length*100:0)+'%'}}/></div><p>{issues.filter(i=>['done','completed','closed','concluido','concluído'].includes(i.status.toLowerCase())).length} de {issues.length} tarefas concluídas</p></div>
           </section>
         </div>
+        <section className="task-management">
+          <div className="section-title"><div><p className="eyebrow">EXECUÇÃO</p><h2>Gerenciar tarefas</h2></div><span className="count">{issues.length} tarefas</span></div>
+          <form id="task-form" className="task-form" onSubmit={saveIssue}>
+            <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setTaskTitle(''); setTaskDueDate(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
+            <div className="task-form-grid">
+              <div className="field task-title-field"><label htmlFor="task-title">Título da tarefa</label><input id="task-title" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Ex.: Revisar fluxo de cadastro" maxLength={240} required /></div>
+              <div className="field"><label htmlFor="task-project">Projeto</label><select id="task-project" value={taskProject || projects[0]?.id || ''} onChange={e => setTaskProject(e.target.value)} required disabled={!projects.length}>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
+              <div className="field"><label htmlFor="task-status">Status</label><select id="task-status" value={taskStatus} onChange={e => setTaskStatus(e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
+              <div className="field"><label htmlFor="task-priority">Prioridade</label><select id="task-priority" value={taskPriority} onChange={e => setTaskPriority(e.target.value)}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
+              <div className="field"><label htmlFor="task-due-date">Prazo <span className="optional">(opcional)</span></label><input id="task-due-date" type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} /></div>
+            </div>
+            <button className="button button-primary" disabled={busy || !projects.length || !taskTitle.trim()}>{busy ? 'Salvando…' : editingIssueId ? 'Salvar alterações' : 'Criar tarefa'} ↗</button>
+            {!projects.length && <p className="muted">Crie um projeto antes de cadastrar tarefas.</p>}
+          </form>
+          <div className="task-table">
+            <div className="task-table-head"><span>Tarefa</span><span>Status</span><span>Prioridade</span><span>Prazo</span><span>Ações</span></div>
+            {issues.length ? issues.map(issue => <article className="task-table-row" key={issue.id}>
+              <div className="task-name"><strong>{issue.title}</strong><small>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}</small></div>
+              <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ status: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
+              <select aria-label={`Prioridade de ${issue.title}`} value={issue.priority} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ priority: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select>
+              <span className="task-due">{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span>
+              <div className="task-actions"><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
+            </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>Nenhuma tarefa ainda</strong><p>Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.</p></div>}
+          </div>
+        </section>
         <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">SEUS AMBIENTES</p><h2>Workspaces</h2></div><span className="count">{workspaces.length}</span></div>
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card" key={w.id}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
           <form className="workspace-form" onSubmit={createWorkspace}><label htmlFor="workspace-name">Criar workspace</label><div className="form-row"><input id="workspace-name" value={workspaceName} onChange={e=>setWorkspaceName(e.target.value)} placeholder="Ex.: Produto, Marketing, Minha equipe" maxLength={120} required/><button className="button button-primary" disabled={busy}>{busy?'Criando…':'Criar workspace'} ↗</button></div></form>
