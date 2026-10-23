@@ -9,6 +9,7 @@ type Project = { id: string; name: string; key: string; description: string | nu
 type Issue = { id: string; title: string; description: string | null; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
 type Label = { id: string; project_id: string; name: string; color: string; created_at: string };
+type IssueLabel = { issue_id: string; label_id: string };
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -41,6 +42,8 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
+  const [issueLabels, setIssueLabels] = useState<IssueLabel[]>([]);
+  const [issueLabelFilter, setIssueLabelFilter] = useState('all');
   const [labelName, setLabelName] = useState('');
   const [labelColor, setLabelColor] = useState('#c6f08b');
   const [labelProject, setLabelProject] = useState('');
@@ -74,10 +77,18 @@ function App() {
     if (projectError) { setError(projectError.message); return; }
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
-    if (!nextProjects.length) { setIssues([]); setLabels([]); return; }
+    if (!nextProjects.length) { setIssues([]); setLabels([]); setIssueLabels([]); return; }
     const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,status,priority,updated_at,project_id,due_date').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
-    else setIssues((issueData ?? []) as Issue[]);
+    else {
+      const nextIssues = (issueData ?? []) as Issue[];
+      setIssues(nextIssues);
+      if (nextIssues.length) {
+        const { data: relationData, error: relationError } = await supabase.from('issue_labels').select('issue_id,label_id').in('issue_id', nextIssues.map(i => i.id));
+        if (relationError) setError(relationError.message);
+        else setIssueLabels((relationData ?? []) as IssueLabel[]);
+      } else setIssueLabels([]);
+    }
     const { data: labelData, error: labelError } = await supabase.from('labels').select('id,project_id,name,color,created_at').in('project_id', nextProjects.map(p => p.id)).order('name');
     if (labelError) setError(labelError.message);
     else setLabels((labelData ?? []) as Label[]);
@@ -181,7 +192,8 @@ function App() {
     return (!q || issue.title.toLowerCase().includes(q) || (issue.description ?? '').toLowerCase().includes(q) || `${projects.find(p => p.id === issue.project_id)?.key ?? ''}-${issue.issue_number}`.toLowerCase().includes(q))
       && (issueProjectFilter === 'all' || issue.project_id === issueProjectFilter)
       && (issueStatusFilter === 'all' || issue.status === issueStatusFilter)
-      && (issuePriorityFilter === 'all' || issue.priority === issuePriorityFilter);
+      && (issuePriorityFilter === 'all' || issue.priority === issuePriorityFilter)
+      && (issueLabelFilter === 'all' || issueLabels.some(link => link.issue_id === issue.id && link.label_id === issueLabelFilter));
   });
 
   async function createLabel(event: FormEvent) {
@@ -202,6 +214,17 @@ function App() {
     const { error } = await supabase.from('labels').delete().eq('id', label.id);
     if (error) setError(error.message);
     else { setMessage('Etiqueta excluída.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
+  async function toggleIssueLabel(issue: Issue, label: Label) {
+    const exists = issueLabels.some(link => link.issue_id === issue.id && link.label_id === label.id);
+    setBusy(true); setError(''); setMessage('');
+    const result = exists
+      ? await supabase.from('issue_labels').delete().eq('issue_id', issue.id).eq('label_id', label.id)
+      : await supabase.from('issue_labels').insert({ issue_id: issue.id, label_id: label.id });
+    if (result.error) setError(result.error.message);
+    else { setMessage(exists ? 'Etiqueta removida da tarefa.' : 'Etiqueta associada à tarefa.'); await loadWorkspaces(); }
     setBusy(false);
   }
 
@@ -294,7 +317,8 @@ function App() {
             <div className="field"><label htmlFor="issue-project-filter">Projeto</label><select id="issue-project-filter" value={issueProjectFilter} onChange={e => setIssueProjectFilter(e.target.value)}><option value="all">Todos os projetos</option>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
             <div className="field"><label htmlFor="issue-status-filter">Status</label><select id="issue-status-filter" value={issueStatusFilter} onChange={e => setIssueStatusFilter(e.target.value)}><option value="all">Todos</option><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
             <div className="field"><label htmlFor="issue-priority-filter">Prioridade</label><select id="issue-priority-filter" value={issuePriorityFilter} onChange={e => setIssuePriorityFilter(e.target.value)}><option value="all">Todas</option><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
-            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); }}>Limpar filtros</button>
+            <div className="field"><label htmlFor="issue-label-filter">Etiqueta</label><select id="issue-label-filter" value={issueLabelFilter} onChange={e => setIssueLabelFilter(e.target.value)}><option value="all">Todas</option>{labels.filter(label => issueProjectFilter === 'all' || label.project_id === issueProjectFilter).map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></div>
+            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); }}>Limpar filtros</button>
           </div>
           <div className="task-results-note">Exibindo {filteredIssues.length} de {issues.length} tarefas</div>
           <div className="task-view-switch" role="group" aria-label="Visualização das tarefas">
@@ -318,6 +342,7 @@ function App() {
                     <div className="kanban-card-top"><span>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}</span><span className={'priority priority-' + issue.priority}>{({lowest:'Mínima',low:'Baixa',medium:'Média',high:'Alta',highest:'Urgente'} as Record<string,string>)[issue.priority] ?? issue.priority}</span></div>
                     <strong className="kanban-card-title">{issue.title}</strong>
                     {issue.description && <p className="kanban-card-description">{issue.description}</p>}
+                    <div className="issue-labels">{labels.filter(label => label.project_id === issue.project_id).map(label => { const active = issueLabels.some(link => link.issue_id === issue.id && link.label_id === label.id); return <button type="button" key={label.id} className={'issue-label-toggle' + (active ? ' selected' : '')} style={{color: label.color, borderColor: label.color}} aria-pressed={active} disabled={busy} onClick={() => void toggleIssueLabel(issue, label)}>{active ? '✓ ' : '+ '}{label.name}</button>; })}</div>
                     <div className="kanban-card-meta"><span>{projects.find(p => p.id === issue.project_id)?.name ?? 'Projeto'}</span><span>{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span></div>
                     <div className="kanban-card-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
                   </article>)}
@@ -332,6 +357,7 @@ function App() {
               <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={e => void moveIssueToStatus(issue, e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
               <select aria-label={`Prioridade de ${issue.title}`} value={issue.priority} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ priority: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select>
               <span className="task-due">{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span>
+              <div className="issue-labels task-row-labels">{labels.filter(label => label.project_id === issue.project_id && issueLabels.some(link => link.issue_id === issue.id && link.label_id === label.id)).map(label => <span className="issue-label-toggle selected" key={label.id} style={{color: label.color, borderColor: label.color}}>{label.name}</span>)}</div>
               <div className="task-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
           </div>}
