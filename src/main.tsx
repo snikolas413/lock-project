@@ -6,7 +6,9 @@ import './styles.css';
 
 type Workspace = { id: string; name: string; slug: string; created_at: string };
 type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; updated_at: string };
-type Issue = { id: string; title: string; description: string | null; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null };
+type Issue = { id: string; title: string; description: string | null; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; assignee_id: string | null };
+type TeamMember = { workspace_id: string; user_id: string; role: string };
+type Profile = { id: string; display_name: string | null };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
 type Label = { id: string; project_id: string; name: string; color: string; created_at: string };
 type IssueLabel = { issue_id: string; label_id: string };
@@ -36,10 +38,13 @@ function App() {
   const [taskStatus, setTaskStatus] = useState('backlog');
   const [taskPriority, setTaskPriority] = useState('medium');
   const [taskDueDate, setTaskDueDate] = useState('');
+  const [taskAssignee, setTaskAssignee] = useState('');
   const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
   const [issueLabels, setIssueLabels] = useState<IssueLabel[]>([]);
@@ -62,7 +67,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) { setWorkspaces([]); setProjects([]); setIssues([]); return; }
+    if (!session) { setWorkspaces([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
     void loadWorkspaces();
   }, [session]);
 
@@ -72,13 +77,23 @@ function App() {
     const nextWorkspaces = (data ?? []) as Workspace[];
     setWorkspaces(nextWorkspaces);
     setSelectedWorkspace(current => current && nextWorkspaces.some(w => w.id === current) ? current : (nextWorkspaces[0]?.id ?? ''));
-    if (!nextWorkspaces.length) { setProjects([]); setIssues([]); return; }
+    if (!nextWorkspaces.length) { setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
+    const { data: memberData, error: memberError } = await supabase.from('workspace_members').select('workspace_id,user_id,role').in('workspace_id', nextWorkspaces.map(w => w.id));
+    if (memberError) setError(memberError.message);
+    const nextMembers = (memberData ?? []) as TeamMember[];
+    setTeamMembers(nextMembers);
+    const memberIds = [...new Set(nextMembers.map(member => member.user_id))];
+    if (memberIds.length) {
+      const { data: profileData, error: profileError } = await supabase.from('profiles').select('id,display_name').in('id', memberIds);
+      if (profileError) setError(profileError.message);
+      else setProfiles((profileData ?? []) as Profile[]);
+    } else setProfiles([]);
     const { data: projectData, error: projectError } = await supabase.from('projects').select('id,name,key,description,status,workspace_id,updated_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('updated_at', { ascending: false });
     if (projectError) { setError(projectError.message); return; }
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
     if (!nextProjects.length) { setIssues([]); setLabels([]); setIssueLabels([]); return; }
-    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,status,priority,updated_at,project_id,due_date').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
+    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,status,priority,updated_at,project_id,due_date,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else {
       const nextIssues = (issueData ?? []) as Issue[];
@@ -162,13 +177,14 @@ function App() {
       status: taskStatus,
       priority: taskPriority,
       due_date: taskDueDate || null,
+      assignee_id: taskAssignee || null,
     };
     const result = editingIssueId
       ? await supabase.from('issues').update(payload).eq('id', editingIssueId)
       : await supabase.from('issues').insert({ ...payload, reporter_id: session.user.id });
     if (result.error) setError(result.error.message);
     else {
-      setTaskTitle(''); setTaskDescription(''); setTaskDueDate(''); setTaskStatus('backlog'); setTaskPriority('medium');
+      setTaskTitle(''); setTaskDescription(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium');
       setEditingIssueId(null); setMessage(editingIssueId ? 'Tarefa atualizada.' : 'Tarefa criada com sucesso.');
       await loadWorkspaces();
     }
@@ -183,6 +199,7 @@ function App() {
     setTaskStatus(issue.status);
     setTaskPriority(issue.priority);
     setTaskDueDate(issue.due_date ?? '');
+    setTaskAssignee(issue.assignee_id ?? '');
     setError(''); setMessage('');
     document.getElementById('task-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -294,6 +311,7 @@ function App() {
               <div className="field"><label htmlFor="task-project">Projeto</label><select id="task-project" value={taskProject || projects[0]?.id || ''} onChange={e => setTaskProject(e.target.value)} required disabled={!projects.length}>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
               <div className="field"><label htmlFor="task-status">Status</label><select id="task-status" value={taskStatus} onChange={e => setTaskStatus(e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
               <div className="field"><label htmlFor="task-priority">Prioridade</label><select id="task-priority" value={taskPriority} onChange={e => setTaskPriority(e.target.value)}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
+              <div className="field"><label htmlFor="task-assignee">Responsável <span className="optional">(opcional)</span></label><select id="task-assignee" value={taskAssignee} onChange={e => setTaskAssignee(e.target.value)}><option value="">Sem responsável</option>{teamMembers.filter(member => member.workspace_id === projects.find(p => p.id === (taskProject || projects[0]?.id))?.workspace_id).map(member => <option key={member.user_id} value={member.user_id}>{profiles.find(profile => profile.id === member.user_id)?.display_name || `Membro ${member.user_id.slice(0, 8)}`}</option>)}</select></div>
               <div className="field"><label htmlFor="task-due-date">Prazo <span className="optional">(opcional)</span></label><input id="task-due-date" type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} /></div>
             </div>
             <button className="button button-primary" disabled={busy || !projects.length || !taskTitle.trim()}>{busy ? 'Salvando…' : editingIssueId ? 'Salvar alterações' : 'Criar tarefa'} ↗</button>
@@ -343,6 +361,7 @@ function App() {
                     <strong className="kanban-card-title">{issue.title}</strong>
                     {issue.description && <p className="kanban-card-description">{issue.description}</p>}
                     <div className="issue-labels">{labels.filter(label => label.project_id === issue.project_id).map(label => { const active = issueLabels.some(link => link.issue_id === issue.id && link.label_id === label.id); return <button type="button" key={label.id} className={'issue-label-toggle' + (active ? ' selected' : '')} style={{color: label.color, borderColor: label.color}} aria-pressed={active} disabled={busy} onClick={() => void toggleIssueLabel(issue, label)}>{active ? '✓ ' : '+ '}{label.name}</button>; })}</div>
+                    <div className="kanban-assignee">{issue.assignee_id ? <><span className="assignee-avatar">{(profiles.find(profile => profile.id === issue.assignee_id)?.display_name || issue.assignee_id).slice(0, 1).toUpperCase()}</span><span>{profiles.find(profile => profile.id === issue.assignee_id)?.display_name || `Membro ${issue.assignee_id.slice(0, 8)}`}</span></> : <span className="unassigned">Sem responsável</span>}</div>
                     <div className="kanban-card-meta"><span>{projects.find(p => p.id === issue.project_id)?.name ?? 'Projeto'}</span><span>{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span></div>
                     <div className="kanban-card-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
                   </article>)}
@@ -355,6 +374,7 @@ function App() {
             {filteredIssues.length ? filteredIssues.map(issue => <article className="task-table-row" key={issue.id}>
               <div className="task-name"><strong>{issue.title}</strong><small>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}{issue.description ? ` · ${issue.description}` : ''}</small></div>
               <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={e => void moveIssueToStatus(issue, e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
+              <select aria-label={`Responsável por ${issue.title}`} value={issue.assignee_id ?? ''} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ assignee_id: e.target.value || null }).eq('id', issue.id); if (error) setError(error.message); else { setMessage('Responsável atualizado.'); await loadWorkspaces(); } setBusy(false); }}><option value="">Sem responsável</option>{teamMembers.filter(member => member.workspace_id === projects.find(p => p.id === issue.project_id)?.workspace_id).map(member => <option key={member.user_id} value={member.user_id}>{profiles.find(profile => profile.id === member.user_id)?.display_name || `Membro ${member.user_id.slice(0, 8)}`}</option>)}</select>
               <select aria-label={`Prioridade de ${issue.title}`} value={issue.priority} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ priority: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select>
               <span className="task-due">{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span>
               <div className="issue-labels task-row-labels">{labels.filter(label => label.project_id === issue.project_id && issueLabels.some(link => link.issue_id === issue.id && link.label_id === label.id)).map(label => <span className="issue-label-toggle selected" key={label.id} style={{color: label.color, borderColor: label.color}}>{label.name}</span>)}</div>
