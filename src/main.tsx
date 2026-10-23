@@ -24,6 +24,7 @@ function App() {
   const [issueProjectFilter, setIssueProjectFilter] = useState('all');
   const [issueStatusFilter, setIssueStatusFilter] = useState('all');
   const [issuePriorityFilter, setIssuePriorityFilter] = useState('all');
+  const [taskView, setTaskView] = useState<'list' | 'kanban'>('kanban');
   const [taskProject, setTaskProject] = useState('');
   const [taskStatus, setTaskStatus] = useState('backlog');
   const [taskPriority, setTaskPriority] = useState('medium');
@@ -140,6 +141,15 @@ function App() {
       && (issuePriorityFilter === 'all' || issue.priority === issuePriorityFilter);
   });
 
+  async function moveIssueToStatus(issue: Issue, status: string) {
+    if (issue.status === status) return;
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await supabase.from('issues').update({ status }).eq('id', issue.id);
+    if (error) setError(error.message);
+    else { setMessage('Tarefa movida no quadro.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
   async function deleteIssue(issue: Issue) {
     if (!window.confirm(`Excluir a tarefa "${issue.title}"? Esta ação não pode ser desfeita.`)) return;
     setBusy(true); setError(''); setMessage('');
@@ -210,16 +220,44 @@ function App() {
             <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); }}>Limpar filtros</button>
           </div>
           <div className="task-results-note">Exibindo {filteredIssues.length} de {issues.length} tarefas</div>
-          <div className="task-table">
+          <div className="task-view-switch" role="group" aria-label="Visualização das tarefas">
+            <button type="button" className={taskView === 'kanban' ? 'active' : ''} onClick={() => setTaskView('kanban')}>▦ Quadro Kanban</button>
+            <button type="button" className={taskView === 'list' ? 'active' : ''} onClick={() => setTaskView('list')}>☷ Lista</button>
+          </div>
+          {taskView === 'kanban' ? <div className="kanban-board">
+            {[
+              { id: 'backlog', label: 'Backlog' }, { id: 'todo', label: 'A fazer' },
+              { id: 'in_progress', label: 'Em andamento' }, { id: 'in_review', label: 'Em revisão' },
+              { id: 'done', label: 'Concluída' }, { id: 'cancelled', label: 'Cancelada' }
+            ].map(column => {
+              const columnIssues = filteredIssues.filter(issue => issue.status === column.id);
+              return <section className="kanban-column" key={column.id}
+                onDragOver={event => event.preventDefault()}
+                onDrop={event => { event.preventDefault(); const issueId = event.dataTransfer.getData('text/plain'); const issue = filteredIssues.find(item => item.id === issueId); if (issue) void moveIssueToStatus(issue, column.id); }}>
+                <header className="kanban-column-heading"><span className={'kanban-status-dot status-' + column.id}/><strong>{column.label}</strong><span className="count">{columnIssues.length}</span></header>
+                <div className="kanban-cards">
+                  {columnIssues.map(issue => <article className="kanban-card" key={issue.id} draggable={!busy}
+                    onDragStart={event => { event.dataTransfer.setData('text/plain', issue.id); event.dataTransfer.effectAllowed = 'move'; }}>
+                    <div className="kanban-card-top"><span>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}</span><span className={'priority priority-' + issue.priority}>{({lowest:'Mínima',low:'Baixa',medium:'Média',high:'Alta',highest:'Urgente'} as Record<string,string>)[issue.priority] ?? issue.priority}</span></div>
+                    <strong className="kanban-card-title">{issue.title}</strong>
+                    {issue.description && <p className="kanban-card-description">{issue.description}</p>}
+                    <div className="kanban-card-meta"><span>{projects.find(p => p.id === issue.project_id)?.name ?? 'Projeto'}</span><span>{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span></div>
+                    <div className="kanban-card-actions"><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
+                  </article>)}
+                  {!columnIssues.length && <div className="kanban-empty">Solte uma tarefa aqui</div>}
+                </div>
+              </section>;
+            })}
+          </div> : <div className="task-table">
             <div className="task-table-head"><span>Tarefa</span><span>Status</span><span>Prioridade</span><span>Prazo</span><span>Ações</span></div>
             {filteredIssues.length ? filteredIssues.map(issue => <article className="task-table-row" key={issue.id}>
               <div className="task-name"><strong>{issue.title}</strong><small>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}{issue.description ? ` · ${issue.description}` : ''}</small></div>
-              <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ status: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
+              <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={e => void moveIssueToStatus(issue, e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
               <select aria-label={`Prioridade de ${issue.title}`} value={issue.priority} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ priority: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select>
               <span className="task-due">{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span>
               <div className="task-actions"><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
-          </div>
+          </div>}
         </section>
         <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">SEUS AMBIENTES</p><h2>Workspaces</h2></div><span className="count">{workspaces.length}</span></div>
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card" key={w.id}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
