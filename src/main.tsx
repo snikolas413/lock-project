@@ -277,7 +277,7 @@ function App() {
                     <strong className="kanban-card-title">{issue.title}</strong>
                     {issue.description && <p className="kanban-card-description">{issue.description}</p>}
                     <div className="kanban-card-meta"><span>{projects.find(p => p.id === issue.project_id)?.name ?? 'Projeto'}</span><span>{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</span></div>
-                    <div className="kanban-card-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários ({issueComments.filter(c => c.issue_id === issue.id).length || '+'})</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
+                    <div className="kanban-card-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
                   </article>)}
                   {!columnIssues.length && <div className="kanban-empty">Solte uma tarefa aqui</div>}
                 </div>
