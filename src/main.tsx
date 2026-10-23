@@ -8,6 +8,7 @@ type Workspace = { id: string; name: string; slug: string; created_at: string };
 type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; updated_at: string };
 type Issue = { id: string; title: string; description: string | null; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
+type Label = { id: string; project_id: string; name: string; color: string; created_at: string };
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -39,6 +40,10 @@ function App() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [labelName, setLabelName] = useState('');
+  const [labelColor, setLabelColor] = useState('#c6f08b');
+  const [labelProject, setLabelProject] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -73,6 +78,9 @@ function App() {
     const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,status,priority,updated_at,project_id,due_date').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else setIssues((issueData ?? []) as Issue[]);
+    const { data: labelData, error: labelError } = await supabase.from('labels').select('id,project_id,name,color,created_at').in('project_id', nextProjects.map(p => p.id)).order('name');
+    if (labelError) setError(labelError.message);
+    else setLabels((labelData ?? []) as Label[]);
   }
 
   useEffect(() => {
@@ -176,6 +184,27 @@ function App() {
       && (issuePriorityFilter === 'all' || issue.priority === issuePriorityFilter);
   });
 
+  async function createLabel(event: FormEvent) {
+    event.preventDefault();
+    const projectId = labelProject || taskProject || projects[0]?.id;
+    const name = labelName.trim();
+    if (!projectId || !name) return;
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await supabase.from('labels').insert({ project_id: projectId, name, color: labelColor });
+    if (error) setError(error.message);
+    else { setLabelName(''); setMessage('Etiqueta criada.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
+  async function deleteLabel(label: Label) {
+    if (!window.confirm(`Excluir a etiqueta "${label.name}"? Ela será removida das tarefas associadas.`)) return;
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await supabase.from('labels').delete().eq('id', label.id);
+    if (error) setError(error.message);
+    else { setMessage('Etiqueta excluída.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
   async function moveIssueToStatus(issue: Issue, status: string) {
     if (issue.status === status) return;
     setBusy(true); setError(''); setMessage('');
@@ -247,6 +276,19 @@ function App() {
             <button className="button button-primary" disabled={busy || !projects.length || !taskTitle.trim()}>{busy ? 'Salvando…' : editingIssueId ? 'Salvar alterações' : 'Criar tarefa'} ↗</button>
             {!projects.length && <p className="muted">Crie um projeto antes de cadastrar tarefas.</p>}
           </form>
+          <section className="label-management">
+            <div className="section-title"><div><p className="eyebrow">ORGANIZAÇÃO</p><h2>Etiquetas do projeto</h2></div><span className="count">{labels.length}</span></div>
+            <form className="label-create-form" onSubmit={createLabel}>
+              <div className="field"><label htmlFor="label-project">Projeto</label><select id="label-project" value={labelProject || taskProject || projects[0]?.id || ''} onChange={e => setLabelProject(e.target.value)} required disabled={!projects.length}>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
+              <div className="field"><label htmlFor="label-name">Nome da etiqueta</label><input id="label-name" value={labelName} onChange={e => setLabelName(e.target.value)} placeholder="Ex.: Bug, UX, Backend" maxLength={50} required /></div>
+              <div className="field label-color-field"><label htmlFor="label-color">Cor</label><input id="label-color" type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} /></div>
+              <button className="button button-primary" disabled={busy || !projects.length || !labelName.trim()}>{busy ? 'Salvando…' : 'Criar etiqueta'} ↗</button>
+            </form>
+            <div className="label-list">
+              {labels.filter(label => !labelProject && !taskProject ? true : label.project_id === (labelProject || taskProject || projects[0]?.id)).map(label => <span className="label-chip" key={label.id} style={{'--label-color': label.color} as React.CSSProperties}><span>{label.name}</span><button type="button" aria-label={`Excluir etiqueta ${label.name}`} disabled={busy} onClick={() => void deleteLabel(label)}>×</button></span>)}
+              {!labels.length && <p className="muted">Crie etiquetas para categorizar o trabalho por tipo, área ou contexto.</p>}
+            </div>
+          </section>
           <div className="task-filters">
             <div className="field search-field"><label htmlFor="issue-search">Buscar tarefas</label><input id="issue-search" value={issueSearch} onChange={e => setIssueSearch(e.target.value)} placeholder="Título, descrição ou código…" /></div>
             <div className="field"><label htmlFor="issue-project-filter">Projeto</label><select id="issue-project-filter" value={issueProjectFilter} onChange={e => setIssueProjectFilter(e.target.value)}><option value="all">Todos os projetos</option>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
