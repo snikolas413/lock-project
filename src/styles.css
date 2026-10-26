@@ -254,3 +254,17 @@
 .kanban-empty{display:grid;place-items:center;min-height:70px;padding:12px;border:1px dashed #ffffff14;border-radius:8px;color:#667382;font-size:10px;text-align:center}
 .kanban-column:has(.kanban-cards:hover){border-color:#ffffff1b}
 @media(max-width:850px){.kanban-board{grid-template-columns:repeat(6,minmax(225px,1fr));gap:9px}.kanban-column{min-width:225px}.kanban-column-heading{top:112px}}
+
+/* Project workspace: keep the work surface focused and task creation contextual. */
+.task-management-heading{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.task-heading-actions{display:flex;align-items:center;gap:12px}
+.task-quick-create{margin:14px 0 18px;padding:18px;border:1px solid #c6f08b35;border-radius:12px;background:#111820;box-shadow:0 14px 35px #00000020}
+.task-quick-create .task-form-heading{margin-bottom:14px}
+.task-quick-create .task-form-grid{gap:12px}
+.task-quick-create .task-description-field{grid-column:1/-1}
+.task-quick-create .button-primary{margin-top:14px}
+.page-project .project-workspace-heading{margin-bottom:18px}
+.page-project .task-management{margin-top:0}
+.page-project .task-view-switch{position:sticky;top:0;z-index:4;padding:8px 0;background:#0b1016}
+.page-project .task-filters{margin:14px 0}
+@media(max-width:700px){.task-management-heading{align-items:flex-start;flex-direction:column}.task-heading-actions{width:100%;justify-content:space-between}.task-quick-create .task-form-grid{grid-template-columns:1fr}.task-quick-create .task-description-field{grid-column:auto}}
