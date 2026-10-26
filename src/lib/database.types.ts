@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issue_comments: {
         Row: {
           author_id: string
@@ -197,6 +241,7 @@ export type Database = {
       projects: {
         Row: {
           created_at: string
+          client_id: string | null
           created_by: string
           description: string | null
           id: string
@@ -208,6 +253,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          client_id?: string | null
           created_by: string
           description?: string | null
           id?: string
@@ -219,6 +265,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          client_id?: string | null
           created_by?: string
           description?: string | null
           id?: string
@@ -229,6 +276,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_workspace_id_fkey"
             columns: ["workspace_id"]
