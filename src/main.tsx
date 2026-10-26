@@ -31,6 +31,7 @@ function App() {
   const [taskDescription, setTaskDescription] = useState('');
   const [issueSearch, setIssueSearch] = useState('');
   const [issueProjectFilter, setIssueProjectFilter] = useState('all');
+  const [issueClientFilter, setIssueClientFilter] = useState('all');
   const [issueStatusFilter, setIssueStatusFilter] = useState('all');
   const [issuePriorityFilter, setIssuePriorityFilter] = useState('all');
   const [taskView, setTaskView] = useState<'list' | 'kanban'>('kanban');
@@ -231,6 +232,7 @@ function App() {
     const q = issueSearch.trim().toLowerCase();
     return (!q || issue.title.toLowerCase().includes(q) || (issue.description ?? '').toLowerCase().includes(q) || `${projects.find(p => p.id === issue.project_id)?.key ?? ''}-${issue.issue_number}`.toLowerCase().includes(q))
       && (issueProjectFilter === 'all' || issue.project_id === issueProjectFilter)
+      && (issueClientFilter === 'all' || projects.some(project => project.id === issue.project_id && project.client_id === issueClientFilter))
       && (issueStatusFilter === 'all' || issue.status === issueStatusFilter)
       && (issuePriorityFilter === 'all' || issue.priority === issuePriorityFilter)
       && (issueLabelFilter === 'all' || issueLabels.some(link => link.issue_id === issue.id && link.label_id === issueLabelFilter));
@@ -365,11 +367,12 @@ function App() {
           </section>
           <div className="task-filters">
             <div className="field search-field"><label htmlFor="issue-search">Buscar tarefas</label><input id="issue-search" value={issueSearch} onChange={e => setIssueSearch(e.target.value)} placeholder="Título, descrição ou código…" /></div>
-            <div className="field"><label htmlFor="issue-project-filter">Projeto</label><select id="issue-project-filter" value={issueProjectFilter} onChange={e => setIssueProjectFilter(e.target.value)}><option value="all">Todos os projetos</option>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
+            <div className="field"><label htmlFor="issue-project-filter">Projeto</label><select id="issue-project-filter" value={issueProjectFilter} onChange={e => setIssueProjectFilter(e.target.value)}><option value="all">Todos os projetos</option>{projects.filter(project => issueClientFilter === 'all' || project.client_id === issueClientFilter).map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
+            <div className="field"><label htmlFor="issue-client-filter">Cliente</label><select id="issue-client-filter" value={issueClientFilter} onChange={e => {setIssueClientFilter(e.target.value);setIssueProjectFilter('all');}}><option value="all">Todos os clientes</option>{clients.filter(client => client.status === 'active').map(client => <option key={client.id} value={client.id}>{client.name}</option>)}</select></div>
             <div className="field"><label htmlFor="issue-status-filter">Status</label><select id="issue-status-filter" value={issueStatusFilter} onChange={e => setIssueStatusFilter(e.target.value)}><option value="all">Todos</option><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
             <div className="field"><label htmlFor="issue-priority-filter">Prioridade</label><select id="issue-priority-filter" value={issuePriorityFilter} onChange={e => setIssuePriorityFilter(e.target.value)}><option value="all">Todas</option><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
             <div className="field"><label htmlFor="issue-label-filter">Etiqueta</label><select id="issue-label-filter" value={issueLabelFilter} onChange={e => setIssueLabelFilter(e.target.value)}><option value="all">Todas</option>{labels.filter(label => issueProjectFilter === 'all' || label.project_id === issueProjectFilter).map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></div>
-            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); }}>Limpar filtros</button>
+            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter('all'); setIssueClientFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); }}>Limpar filtros</button>
           </div>
           <div className="task-results-note">Exibindo {filteredIssues.length} de {issues.length} tarefas</div>
           <div className="task-view-switch" role="group" aria-label="Visualização das tarefas">
