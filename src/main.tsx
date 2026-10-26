@@ -37,6 +37,7 @@ function App() {
   const [issueStatusFilter, setIssueStatusFilter] = useState('all');
   const [issuePriorityFilter, setIssuePriorityFilter] = useState('all');
   const [taskView, setTaskView] = useState<'list' | 'kanban' | 'hierarchy' | 'timeline' | 'roadmap'>('kanban');
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [issueComments, setIssueComments] = useState<IssueComment[]>([]);
   const [commentDraft, setCommentDraft] = useState('');
@@ -249,7 +250,7 @@ function App() {
     if (result.error) setError(result.error.message);
     else {
       setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium');
-      setEditingIssueId(null); setMessage(editingIssueId ? 'Tarefa atualizada.' : 'Tarefa criada com sucesso.');
+      setEditingIssueId(null); setQuickCreateOpen(false); setMessage(editingIssueId ? 'Tarefa atualizada.' : 'Tarefa criada com sucesso.');
       await loadWorkspaces();
     }
     setBusy(false);
@@ -409,8 +410,8 @@ function App() {
         </div></>}
         {activeProjectId && <div className="project-workspace-heading"><button type="button" className="button button-quiet" onClick={closeProject}>← Voltar ao dashboard</button><div><span className="eyebrow">PROJETO SELECIONADO</span><h2>{projects.find(project => project.id === activeProjectId)?.name}</h2><p className="muted">Escolha uma visualização para acompanhar e organizar as tarefas deste projeto.</p></div><span className="count">{filteredIssues.length} tarefas</span></div>}
         <section className="task-management" id="task-management">
-          <div className="section-title"><div><p className="eyebrow">{activeProjectId ? 'EXECUÇÃO DO PROJETO' : 'EXECUÇÃO'}</p><h2>{activeProjectId ? 'Tarefas do projeto' : 'Gerenciar tarefas'}</h2></div><span className="count">{activeProjectId ? filteredIssues.length : issues.length} tarefas</span></div>
-          <form id="task-form" className="task-form" onSubmit={saveIssue}>
+          <div className="section-title task-management-heading"><div><p className="eyebrow">{activeProjectId ? 'EXECUÇÃO DO PROJETO' : 'EXECUÇÃO'}</p><h2>{activeProjectId ? 'Tarefas do projeto' : 'Gerenciar tarefas'}</h2></div><div className="task-heading-actions"><span className="count">{activeProjectId ? filteredIssues.length : issues.length} tarefas</span>{activeProjectId && <button type="button" className="button button-primary" onClick={() => { setEditingIssueId(null); setTaskProject(activeProjectId); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskStatus('backlog'); setTaskPriority('medium'); setTaskDueDate(''); setTaskAssignee(''); setQuickCreateOpen(value => !value); }}>＋ Nova tarefa</button>}</div></div>
+          {(!activeProjectId || quickCreateOpen || editingIssueId) && <form id="task-form" className={'task-form '+(activeProjectId?'task-quick-create':'')} onSubmit={saveIssue}>
             <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
             <div className="task-form-grid">
               <div className="field task-title-field"><label htmlFor="task-title">Título da tarefa</label><input id="task-title" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Ex.: Revisar fluxo de cadastro" maxLength={240} required /></div>
@@ -425,8 +426,8 @@ function App() {
             </div>
             <button className="button button-primary" disabled={busy || !projects.length || !taskTitle.trim()}>{busy ? 'Salvando…' : editingIssueId ? 'Salvar alterações' : 'Criar tarefa'} ↗</button>
             {!projects.length && <p className="muted">Crie um projeto antes de cadastrar tarefas.</p>}
-          </form>
-          <section className="label-management">
+          </form>}
+          {!activeProjectId && <section className="label-management">
             <div className="section-title"><div><p className="eyebrow">ORGANIZAÇÃO</p><h2>Etiquetas do projeto</h2></div><span className="count">{labels.length}</span></div>
             <form className="label-create-form" onSubmit={createLabel}>
               <div className="field"><label htmlFor="label-project">Projeto</label><select id="label-project" value={labelProject || taskProject || projects[0]?.id || ''} onChange={e => setLabelProject(e.target.value)} required disabled={!projects.length}>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
@@ -438,7 +439,7 @@ function App() {
               {labels.filter(label => !labelProject && !taskProject ? true : label.project_id === (labelProject || taskProject || projects[0]?.id)).map(label => <span className="label-chip" key={label.id} style={{color: label.color, borderColor: label.color}}><span>{label.name}</span><button type="button" aria-label={`Excluir etiqueta ${label.name}`} disabled={busy} onClick={() => void deleteLabel(label)}>×</button></span>)}
               {!labels.length && <p className="muted">Crie etiquetas para categorizar o trabalho por tipo, área ou contexto.</p>}
             </div>
-          </section>
+          </section>}
           <div className="task-filters">
             <div className="field search-field"><label htmlFor="issue-search">Buscar tarefas</label><input id="issue-search" value={issueSearch} onChange={e => setIssueSearch(e.target.value)} placeholder="Título, descrição ou código…" /></div>
             {!activeProjectId && <><div className="field"><label htmlFor="issue-project-filter">Projeto</label><select id="issue-project-filter" value={issueProjectFilter} onChange={e => setIssueProjectFilter(e.target.value)}><option value="all">Todos os projetos</option>{projects.filter(project => issueClientFilter === 'all' || project.client_id === issueClientFilter).map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
@@ -447,7 +448,7 @@ function App() {
             <div className="field"><label htmlFor="issue-status-filter">Status</label><select id="issue-status-filter" value={issueStatusFilter} onChange={e => setIssueStatusFilter(e.target.value)}><option value="all">Todos</option><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
             <div className="field"><label htmlFor="issue-priority-filter">Prioridade</label><select id="issue-priority-filter" value={issuePriorityFilter} onChange={e => setIssuePriorityFilter(e.target.value)}><option value="all">Todas</option><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
             <div className="field"><label htmlFor="issue-label-filter">Etiqueta</label><select id="issue-label-filter" value={issueLabelFilter} onChange={e => setIssueLabelFilter(e.target.value)}><option value="all">Todas</option>{labels.filter(label => issueProjectFilter === 'all' || label.project_id === issueProjectFilter).map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></div>
-            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter('all'); setIssueClientFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); }}>Limpar filtros</button>
+            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter(activeProjectId || 'all'); setIssueClientFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); }}>Limpar filtros</button>
           </div>
           <div className="task-results-note">Exibindo {filteredIssues.length} de {issues.length} tarefas</div>
           <div className="task-view-switch" role="group" aria-label="Visualização das tarefas">
