@@ -355,7 +355,7 @@ function App() {
   return <main className="app-shell">
     <header className="topbar"><a className="brand" href="#"><span className="brand-mark">L</span><span>lock<span className="brand-light">project</span></span></a><span className="topbar-note">Seu trabalho, com direção.</span>{session && <button className="button button-quiet" onClick={signOut}>Sair</button>}</header>
     {!isSupabaseConfigured && <div className="notice"><strong>Configuração pendente</strong><span>Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env local para habilitar a autenticação.</span></div>}
-    <section className="hero"><p className="eyebrow"><span className="eyebrow-dot"/> WORKSPACE PARA IDEIAS EM MOVIMENTO</p><h1>Do primeiro rascunho<br/>à <span>entrega final.</span></h1><p className="hero-copy">Organize projetos, reúna seu time e transforme trabalho disperso em progresso visível.</p></section>
+    {!activeProjectId && <section className="hero"><p className="eyebrow"><span className="eyebrow-dot"/> WORKSPACE PARA IDEIAS EM MOVIMENTO</p><h1>Do primeiro rascunho<br/>à <span>entrega final.</span></h1><p className="hero-copy">Organize projetos, reúna seu time e transforme trabalho disperso em progresso visível.</p></section>}
     <section className="content-panel">
       {!ready ? <div className="loading">Preparando seu espaço…</div> : session ? <div className="dashboard dashboard-home">
         <div className="dashboard-heading"><div><p className="eyebrow"><span className="eyebrow-dot"/> {activeProjectId ? 'ÁREA DO PROJETO' : 'VISÃO GERAL'}</p><h1>{activeProjectId ? projects.find(project => project.id === activeProjectId)?.name || 'Projeto' : `Bom te ver, ${session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'por aí'}.`}</h1><p className="muted">{activeProjectId ? `${projects.find(project => project.id === activeProjectId)?.key || ''} · ${clients.find(client => client.id === projects.find(project => project.id === activeProjectId)?.client_id)?.name || 'Sem cliente'}` : 'Aqui está um panorama do que está acontecendo nos seus espaços.'}</p></div><span className="avatar">{(session.user.email?.[0] ?? 'L').toUpperCase()}</span></div>
@@ -397,7 +397,7 @@ function App() {
         </div></>}
         {activeProjectId && <div className="project-workspace-heading"><button type="button" className="button button-quiet" onClick={closeProject}>← Voltar ao dashboard</button><div><span className="eyebrow">PROJETO SELECIONADO</span><h2>{projects.find(project => project.id === activeProjectId)?.name}</h2><p className="muted">Escolha uma visualização para acompanhar e organizar as tarefas deste projeto.</p></div><span className="count">{filteredIssues.length} tarefas</span></div>}
         <section className="task-management" id="task-management">
-          <div className="section-title"><div><p className="eyebrow">EXECUÇÃO</p><h2>Gerenciar tarefas</h2></div><span className="count">{issues.length} tarefas</span></div>
+          <div className="section-title"><div><p className="eyebrow">{activeProjectId ? 'EXECUÇÃO DO PROJETO' : 'EXECUÇÃO'}</p><h2>{activeProjectId ? 'Tarefas do projeto' : 'Gerenciar tarefas'}</h2></div><span className="count">{activeProjectId ? filteredIssues.length : issues.length} tarefas</span></div>
           <form id="task-form" className="task-form" onSubmit={saveIssue}>
             <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
             <div className="task-form-grid">
@@ -441,7 +441,6 @@ function App() {
           <div className="task-view-switch" role="group" aria-label="Visualização das tarefas">
             <button type="button" className={taskView === 'kanban' ? 'active' : ''} onClick={() => setTaskView('kanban')}>▦ Quadro Kanban</button>
             <button type="button" className={taskView === 'list' ? 'active' : ''} onClick={() => setTaskView('list')}>☷ Lista</button>
-            <button type="button" className={taskView === 'hierarchy' ? 'active' : ''} onClick={() => setTaskView('hierarchy')}>⌘ Hierarquia</button>
             <button type="button" className={taskView === 'timeline' ? 'active' : ''} onClick={() => setTaskView('timeline')}>↗ Timeline</button>
             <button type="button" className={taskView === 'roadmap' ? 'active' : ''} onClick={() => setTaskView('roadmap')}>▤ Roadmap</button>
           </div>
