@@ -164,3 +164,31 @@
 .task-view-switch button{border:1px solid #ffffff18;border-radius:8px;padding:10px 13px;background:#ffffff05;color:#aab3bf;font-size:12px;font-weight:650}
 .task-view-switch button.active{border-color:#c6f08b70;background:#c6f08b12;color:#d7f5b0}
 @media(max-width:650px){.project-workspace-heading{grid-template-columns:1fr auto;gap:12px;padding:15px}.project-workspace-heading>.button{grid-column:1/-1;justify-self:start}.project-workspace-heading>div{grid-column:1/-1;grid-row:2}.project-workspace-heading>.count{grid-column:2;grid-row:1}}
+
+
+/* Views rebuilt to match the visual reference: date-scaled timelines and roadmap */
+.gantt-view,.roadmap-gantt-view{display:grid;gap:16px;margin-top:16px;min-width:0}
+.gantt-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;border:1px solid #ffffff12;border-radius:11px;background:#10161e}
+.gantt-toolbar>div{display:grid;gap:5px}.gantt-toolbar strong{font-size:13px}.gantt-toolbar span{font-size:10px;color:#8e9aa8}
+.gantt-legend{display:flex;align-items:center;gap:7px;white-space:nowrap}.gantt-legend i{width:9px;height:9px;border-radius:3px;background:#a7d96e}
+.gantt-scroll,.roadmap-gantt-scroll{overflow-x:auto;border:1px solid #ffffff12;border-radius:12px;background:#0c1118}
+.gantt-canvas{min-width:760px}.gantt-ruler,.gantt-row{display:grid;grid-template-columns:minmax(190px,250px) minmax(520px,1fr)}
+.gantt-ruler{position:sticky;top:0;z-index:2;background:#121923;border-bottom:1px solid #ffffff15}
+.gantt-task-label{display:grid;align-content:center;gap:5px;min-width:0;padding:11px 14px;border-right:1px solid #ffffff10}
+.gantt-task-label strong{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gantt-task-label small{font-size:9px;color:#84909e}
+.gantt-calendar,.roadmap-gantt-calendar{position:relative;height:42px;overflow:hidden}
+.gantt-calendar span,.roadmap-gantt-calendar span{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding-left:8px;border-left:1px solid #ffffff12;color:#aab4c0;font-size:10px;text-transform:capitalize;white-space:nowrap}
+.gantt-row{min-height:59px;border-bottom:1px solid #ffffff0b}.gantt-row:last-child{border-bottom:0}
+.gantt-track,.roadmap-line-track{position:relative;align-self:stretch;min-height:58px;background-image:linear-gradient(to right,#ffffff0b 1px,transparent 1px);background-size:8.3333% 100%}
+.gantt-bar,.roadmap-bar{position:absolute;top:50%;transform:translateY(-50%);height:24px;border:0;border-radius:6px;background:#a7d96e;color:#18220e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;padding:0 8px;font-size:9px;font-weight:800;cursor:pointer;min-width:10px}
+.gantt-bar span{display:block;overflow:hidden;text-overflow:ellipsis}.gantt-todo{background:#72b8f5;color:#101b2b}.gantt-in_progress{background:#b8e879;color:#18220e}.gantt-in_review{background:#c7a0fa;color:#241633}.gantt-done{background:#61c995;color:#10261b}.gantt-cancelled{background:#e58b86;color:#301514}.gantt-backlog{background:#778596;color:#10151c}
+.gantt-due-marker,.roadmap-due-dot{position:absolute;top:50%;width:8px;height:8px;transform:translate(-50%,-50%);border:2px solid #0c1118;border-radius:50%;background:#e9f6d6;z-index:1}
+.gantt-empty{padding:28px;text-align:center;color:#84909e;font-size:11px}
+.gantt-undated{padding:15px;border:1px solid #ffffff12;border-radius:11px;background:#10161e}
+.gantt-undated h4{display:flex;gap:8px;align-items:center;margin:0 0 8px;font-size:12px}.gantt-undated h4 span{padding:3px 7px;border-radius:99px;background:#ffffff0d;color:#aab4c0;font-size:10px}
+.gantt-undated-row{display:grid;grid-template-columns:8px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #ffffff0d}.gantt-undated-row strong{font-size:11px;overflow-wrap:anywhere}.gantt-undated-row small{font-size:9px;color:#84909e}
+.roadmap-gantt-view .roadmap-gantt-project{min-width:0;border:1px solid #ffffff14;border-radius:12px;background:#0d1219;overflow:hidden}.roadmap-gantt-project>header{border-bottom:1px solid #ffffff12}
+.roadmap-gantt-canvas{min-width:760px}.roadmap-gantt-ruler,.roadmap-line{display:grid;grid-template-columns:minmax(230px,310px) minmax(450px,1fr)}
+.roadmap-gantt-ruler{background:#121923;border-bottom:1px solid #ffffff15}.roadmap-gantt-ruler>div:first-child{display:flex;align-items:center;padding:12px 14px;border-right:1px solid #ffffff10;color:#aab4c0;font-size:10px;font-weight:700}
+.roadmap-line{min-height:51px;border-bottom:1px solid #ffffff09}.roadmap-line-label{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 12px;border-right:1px solid #ffffff0c}.roadmap-line-label .hierarchy-type{flex-shrink:0;font-size:8px;padding:3px 5px}.roadmap-line-label button{min-width:0;flex:1;padding:0;border:0;background:none;color:#e1e7ee;text-align:left;font:inherit;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}.roadmap-line-label button:hover{color:#c6f08b}.roadmap-line-label small{flex-shrink:0;color:#8995a3;font-size:9px;white-space:nowrap}.roadmap-line-track{min-height:50px}.roadmap-bar{height:15px;border-radius:5px;cursor:default}.roadmap-bar-todo{background:#64b8f3}.roadmap-bar-in_progress{background:#39c9a2}.roadmap-bar-in_review{background:#c09af5}.roadmap-bar-done{background:#64ce91}.roadmap-bar-cancelled{background:#e58b86}.roadmap-bar-backlog{background:#748395}
+@media(max-width:650px){.gantt-toolbar{align-items:flex-start;flex-direction:column}.gantt-undated-row{grid-template-columns:8px minmax(0,1fr)}.gantt-undated-row small,.gantt-undated-row button{grid-column:2;justify-self:start}.roadmap-line-label{gap:5px;padding:7px}.roadmap-line-label small{display:none}}
