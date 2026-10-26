@@ -181,6 +181,7 @@ export type Database = {
           due_date?: string | null
           start_date?: string | null
           end_date?: string | null
+          duration_days?: number | null
           id?: string
           issue_number?: number
           position?: number
