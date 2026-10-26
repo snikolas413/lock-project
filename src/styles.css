@@ -300,3 +300,8 @@
  .task-view-switch button{flex:1 1 auto}
  .kanban-board{grid-auto-columns:minmax(220px,85vw)}
 }
+
+
+/* Evita que o cabeçalho da tabela Lista se sobreponha ao cabeçalho principal */
+.task-table-head{position:relative;top:auto;z-index:1}
+@media(max-width:900px){.task-table-head{position:relative;top:auto;z-index:1}}
