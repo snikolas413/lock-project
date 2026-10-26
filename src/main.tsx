@@ -169,7 +169,7 @@ function App() {
     const name = workspaceName.trim(); if (!name) return;
     const slug = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'workspace';
     setBusy(true); setError(''); setMessage('');
-    const { data: newWorkspace, error } = await supabase.from('workspaces').insert({ name, slug, created_by: session.user.id }).select('id').single();
+    const { error } = await supabase.from('workspaces').insert({ name, slug, created_by: session.user.id });
     if (error) setError(error.message);
     else { setWorkspaceName(''); setMessage('Time criado com sucesso.'); await loadWorkspaces(); }
     setBusy(false);
@@ -179,7 +179,7 @@ function App() {
     event.preventDefault();
     if (!session?.user || !selectedWorkspace || !clientName.trim()) return;
     const name = clientName.trim();
-    const slugBase = name.normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'cliente';
+    const slugBase = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'cliente';
     const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
     setBusy(true); setError(''); setMessage('');
     const { data, error } = await supabase.from('clients').insert({ workspace_id: selectedWorkspace, name, slug, description: clientDescription.trim() || null, created_by: session.user.id }).select('id').single();
@@ -306,7 +306,7 @@ function App() {
         </div>
         <div className="dashboard-columns">
           <section className="dashboard-section"><div className="section-title"><div><p className="eyebrow">SEUS PROJETOS</p><h2>Projetos recentes</h2></div><span className="count">{projects.length}</span></div>
-            {projects.length ? <div className="project-list">{projects.slice(0,6).map(p=><article className="project-row" key={p.id}><span className="project-mark">{p.key.slice(0,2)}</span><div className="project-copy"><strong>{p.name}</strong><span>{p.key} · {p.status}</span></div><span className="project-status">Ativo</span></article>)}</div> : <div className="empty-state compact-empty"><span className="empty-icon">◇</span><strong>Seu primeiro projeto começa aqui</strong><p>Crie um projeto para reunir tarefas e acompanhar as entregas.</p></div>}
+            {projects.length ? <div className="project-list">{projects.slice(0,6).map(p=><article className="project-row" key={p.id}><span className="project-mark">{p.key.slice(0,2)}</span><div className="project-copy"><strong>{p.name}</strong><span>{p.key} · {clients.find(client=>client.id===p.client_id)?.name ?? 'Sem cliente'} · {p.status}</span></div><span className="project-status">Ativo</span></article>)}</div> : <div className="empty-state compact-empty"><span className="empty-icon">◇</span><strong>Seu primeiro projeto começa aqui</strong><p>Crie um projeto para reunir tarefas e acompanhar as entregas.</p></div>}
             <section className="client-management">
               <div className="section-title"><div><p className="eyebrow">CLIENTES DO TIME</p><h2>Clientes</h2></div><span className="count">{clients.filter(client=>client.workspace_id===(selectedWorkspace||workspaces[0]?.id)).length}</span></div>
               <div className="client-list">{clients.filter(client=>client.workspace_id===(selectedWorkspace||workspaces[0]?.id)).map(client=><article className="client-row" key={client.id}><span className="client-mark">{client.name.slice(0,1).toUpperCase()}</span><div className="client-copy"><strong>{client.name}</strong><span>{projects.filter(project=>project.client_id===client.id).length} projetos · {client.status==='active'?'Ativo':'Arquivado'}</span>{client.description&&<small>{client.description}</small>}</div></article>)}</div>
