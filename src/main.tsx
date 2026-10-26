@@ -65,6 +65,8 @@ function App() {
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [memberEmailDrafts, setMemberEmailDrafts] = useState<Record<string, string>>({});
+  const [memberRoleDrafts, setMemberRoleDrafts] = useState<Record<string, 'analyst' | 'viewer'>>({});
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
@@ -188,6 +190,17 @@ function App() {
       }
     } catch (e) { setError(e instanceof Error ? e.message : 'Não foi possível autenticar.'); }
     finally { setBusy(false); }
+  }
+
+  async function addWorkspaceMember(workspaceId: string) {
+    const memberEmail = (memberEmailDrafts[workspaceId] || '').trim().toLowerCase();
+    const memberRole = memberRoleDrafts[workspaceId] || 'analyst';
+    if (!memberEmail) { setError('Informe o e-mail da pessoa que deseja adicionar.'); return; }
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await (supabase as any).rpc('add_workspace_member_by_email', { target_workspace_id: workspaceId, member_email: memberEmail, member_role: memberRole });
+    if (error) setError(error.message);
+    else { setMemberEmailDrafts(current => ({ ...current, [workspaceId]: '' })); setMessage('Pessoa adicionada ao time com sucesso.'); await loadWorkspaces(); }
+    setBusy(false);
   }
 
   async function updateMemberRole(member: TeamMember, role: string) {
@@ -735,6 +748,12 @@ function App() {
               const canManageMembers = isPlatformAdmin || members.some(member => member.user_id === session?.user.id && ['owner', 'admin'].includes(member.role));
               return <section className="member-workspace" key={workspace.id}>
                 <h4>{workspace.name}</h4>
+                {canManageMembers && <form className="member-add-form" onSubmit={event => { event.preventDefault(); void addWorkspaceMember(workspace.id); }}>
+                  <div className="field"><label htmlFor={`member-email-${workspace.id}`}>Adicionar pessoa pelo e-mail</label><input id={`member-email-${workspace.id}`} type="email" value={memberEmailDrafts[workspace.id] || ''} onChange={event => setMemberEmailDrafts(current => ({ ...current, [workspace.id]: event.target.value }))} placeholder="pessoa@empresa.com" autoComplete="off" required /></div>
+                  <div className="field"><label htmlFor={`member-role-${workspace.id}`}>Acesso inicial</label><select id={`member-role-${workspace.id}`} value={memberRoleDrafts[workspace.id] || 'analyst'} onChange={event => setMemberRoleDrafts(current => ({ ...current, [workspace.id]: event.target.value as 'analyst' | 'viewer' }))}><option value="analyst">Analista</option><option value="viewer">Visualizador</option></select></div>
+                  <button type="submit" className="button button-primary" disabled={busy || !(memberEmailDrafts[workspace.id] || '').trim()}>{busy ? 'Adicionando…' : 'Adicionar ao time'} ↗</button>
+                  <p className="muted">A pessoa precisa ter uma conta cadastrada no Lock Project. Convites por e-mail ainda não estão ativos.</p>
+                </form>}
                 {members.length ? members.map(member => {
                   const profile = profiles.find(item => item.id === member.user_id);
                   const isSelf = member.user_id === session?.user.id;
