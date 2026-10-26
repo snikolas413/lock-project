@@ -362,6 +362,13 @@ function App() {
   }
 
   async function saveIssueScheduleDate(issue: Issue, field: 'start_date' | 'end_date', value: string) {
+    const startDate = field === 'start_date' ? value : issue.start_date;
+    const endDate = field === 'end_date' ? value : (issue.end_date || issue.due_date);
+    if (startDate && endDate && startDate > endDate) {
+      setError('A data de início não pode ser posterior ao término. Ajuste as datas antes de salvar.');
+      await loadWorkspaces();
+      return;
+    }
     const update = field === 'start_date'
       ? { start_date: value || null }
       : { end_date: value || null, due_date: value || null };
@@ -371,7 +378,6 @@ function App() {
     else { setMessage('Data da tarefa atualizada.'); await loadWorkspaces(); }
     setBusy(false);
   }
-
   async function saveIssueDuration(issue: Issue, durationDays: number) {
     const duration_days = Math.max(1, Math.min(365, Math.floor(durationDays || 1)));
     setBusy(true); setError(''); setMessage('');
