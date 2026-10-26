@@ -305,3 +305,18 @@
 /* Evita que o cabeçalho da tabela Lista se sobreponha ao cabeçalho principal */
 .task-table-head{position:relative;top:auto;z-index:1}
 @media(max-width:900px){.task-table-head{position:relative;top:auto;z-index:1}}
+
+
+/* Kanban refinado: feedback de arraste, cartões e criação rápida por coluna */
+.kanban-column{transition:border-color .16s ease,background .16s ease,box-shadow .16s ease}
+.kanban-column-drag-over{border-color:#c6f08b!important;background:#c6f08b0a!important;box-shadow:inset 0 0 0 1px #c6f08b35,0 0 24px #c6f08b0c}
+.kanban-column-drag-over .kanban-column-heading{border-bottom-color:#c6f08b55}
+.kanban-card-dragging{opacity:.42;transform:scale(.98);border-color:#c6f08b!important;box-shadow:0 0 0 1px #c6f08b30}
+.kanban-add-task{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:34px;margin:10px 0 2px;padding:8px;border:1px dashed #ffffff1a;border-radius:8px;background:#ffffff03;color:#9aa7b5;font-size:10px;font-weight:650;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.kanban-add-task:hover{border-color:#c6f08b70;background:#c6f08b0b;color:#c6f08b}
+.kanban-column-drag-over .kanban-add-task{border-color:#c6f08b35;color:#c6f08b}
+.kanban-card-top .priority{flex-shrink:0}
+.kanban-card-title{overflow-wrap:anywhere}
+.kanban-card-meta{align-items:center}
+.kanban-card-meta span:last-child{flex-shrink:0;text-align:right}
+@media(max-width:600px){.kanban-add-task{min-height:38px;font-size:11px}.kanban-card{padding:11px}}
