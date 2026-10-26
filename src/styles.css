@@ -123,3 +123,28 @@
 .member-row select{width:100%;min-width:0}
 .member-row select:disabled{opacity:.65}
 @media(max-width:600px){.member-management{padding:14px}.member-row{grid-template-columns:minmax(0,1fr) auto;gap:8px}.member-row select{grid-column:1;grid-row:2}.member-row .text-button{grid-column:2;grid-row:2;justify-self:end}}
+
+
+/* Navegação da estrutura e novas visualizações de projeto */
+.workspace-card-clickable,.client-row-clickable,.project-row-clickable{cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.workspace-card-clickable:hover,.workspace-card-clickable:focus-visible,.client-row-clickable:hover,.client-row-clickable:focus-visible,.project-row-clickable:hover,.project-row-clickable:focus-visible{outline:none;border-color:#c6f08b70;background:#c6f08b08}
+.client-management,.task-management{scroll-margin-top:20px}
+.timeline-view{display:grid;gap:0;margin-top:18px}
+.timeline-item{display:grid;grid-template-columns:105px minmax(0,1fr);gap:16px;min-height:88px}
+.timeline-date{padding:18px 0;color:#a8b2bf;font-size:11px;text-align:right}
+.timeline-track{position:relative;display:flex;align-items:flex-start;gap:13px;padding:12px 0 18px 20px;border-left:1px solid #ffffff1c}
+.timeline-node{position:absolute;left:-6px;top:20px;width:11px;height:11px;border:2px solid #10151d;border-radius:50%;background:#8b96a5}
+.timeline-node.status-in_progress{background:#c6f08b}.timeline-node.status-done{background:#74d6a0}.timeline-node.status-in_review{background:#d8a7ff}.timeline-node.status-cancelled{background:#ff9e91}
+.timeline-card{display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;width:100%;padding:13px 15px;border:1px solid #ffffff12;border-radius:10px;background:#111720}
+.timeline-card>div:first-child{display:grid;gap:5px;min-width:150px;flex:1}.timeline-card strong{font-size:12px}.timeline-card small{font-size:10px;color:#8b96a5}
+.roadmap-view{display:grid;gap:15px;margin-top:18px}
+.roadmap-project{min-width:0;border:1px solid #ffffff14;border-radius:12px;background:#0d1219;overflow:hidden}
+.roadmap-project>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px;border-bottom:1px solid #ffffff12}
+.roadmap-project>header>div{display:flex;align-items:center;gap:10px;min-width:0}.roadmap-project>header>div>div{display:grid;gap:4px;min-width:0}.roadmap-project>header strong{font-size:12px}.roadmap-project>header small{font-size:10px;color:#8b96a5}
+.roadmap-milestones{display:grid;gap:12px;padding:15px}
+.roadmap-epic{display:grid;grid-template-columns:auto minmax(120px,1fr) auto;align-items:center;gap:12px;padding:12px;border:1px solid #c6f08b30;border-radius:10px;background:#c6f08b06}
+.roadmap-epic>strong{font-size:12px;overflow-wrap:anywhere}.roadmap-epic-tag{font-size:9px;font-weight:800;letter-spacing:.7px;color:#c6f08b}
+.roadmap-children{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;padding-top:5px}
+.roadmap-children>div{display:grid;gap:5px;padding:10px;border-left:2px solid #ffffff20;background:#ffffff04;color:#d6dce4;font-size:11px;overflow-wrap:anywhere}
+.roadmap-children>div>span{font-size:8px;color:#9ca7b5;letter-spacing:.5px}.roadmap-children small{font-size:9px;color:#7f8996}
+@media(max-width:600px){.timeline-item{grid-template-columns:72px minmax(0,1fr);gap:9px}.timeline-date{font-size:9px}.timeline-track{padding-left:14px}.timeline-card{align-items:flex-start;gap:9px;padding:11px}.roadmap-epic{grid-template-columns:auto 1fr}.roadmap-epic>.status-text-backlog,.roadmap-epic>.status-text-todo,.roadmap-epic>.status-text-in_progress,.roadmap-epic>.status-text-in_review,.roadmap-epic>.status-text-done,.roadmap-epic>.status-text-cancelled{grid-column:2}.roadmap-project>header{align-items:flex-start}}
