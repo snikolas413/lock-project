@@ -536,12 +536,12 @@ function App() {
                   <div className="gantt-ruler"><div className="gantt-task-label">Tarefa / período</div><div className="gantt-calendar">{marks.map((mark,index)=><span key={index} style={{left:mark.left+'%',width:mark.width+'%'}}>{mark.label}</span>)}</div></div>
                   {dated.map(issue => {
                     const endDate = issue.end_date || issue.due_date || issue.start_date!;
-                    const startDate = issue.start_date || endDate;
+                    const startDate = issue.start_date || iso(new Date(dateAt(endDate).getTime()-7*dayMs));
                     const startPos = position(startDate);
                     const endPos = position(endDate);
                     const width = Math.max(1.2,endPos-startPos);
                     const overdue = endDate < todayIso && issue.status !== 'done' && issue.status !== 'cancelled';
-                    const milestone = issue.type === 'epic' || startDate === endDate;
+                    const milestone = issue.type === 'epic' || (!!issue.start_date && !!(issue.end_date || issue.due_date) && startDate === endDate);
                     const assigned = profiles.find(profile=>profile.id===issue.assignee_id)?.display_name || (issue.assignee_id ? 'Membro atribuído' : 'Sem responsável');
                     const project = projects.find(p=>p.id===issue.project_id);
                     return <article className={'gantt-row'+(overdue?' gantt-row-overdue':'')} key={issue.id}>
