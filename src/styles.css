@@ -148,3 +148,10 @@
 .roadmap-children>div{display:grid;gap:5px;padding:10px;border-left:2px solid #ffffff20;background:#ffffff04;color:#d6dce4;font-size:11px;overflow-wrap:anywhere}
 .roadmap-children>div>span{font-size:8px;color:#9ca7b5;letter-spacing:.5px}.roadmap-children small{font-size:9px;color:#7f8996}
 @media(max-width:600px){.timeline-item{grid-template-columns:72px minmax(0,1fr);gap:9px}.timeline-date{font-size:9px}.timeline-track{padding-left:14px}.timeline-card{align-items:flex-start;gap:9px;padding:11px}.roadmap-epic{grid-template-columns:auto 1fr}.roadmap-epic>.status-text-backlog,.roadmap-epic>.status-text-todo,.roadmap-epic>.status-text-in_progress,.roadmap-epic>.status-text-in_review,.roadmap-epic>.status-text-done,.roadmap-epic>.status-text-cancelled{grid-column:2}.roadmap-project>header{align-items:flex-start}}
+
+.team-clients-modal{width:min(760px,100%);max-height:min(86vh,850px);overflow:auto;padding:24px;border:1px solid #ffffff1c;border-radius:16px;background:#111720;box-shadow:0 24px 80px #0008}
+.team-clients-modal .issue-modal-header{align-items:flex-start}.team-clients-list{display:grid;gap:11px;padding-top:18px}
+.team-client-detail{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1px solid #ffffff12;border-radius:11px;background:#0c1118}
+.team-client-detail-copy{display:grid;gap:6px;min-width:0;flex:1}.team-client-detail-copy>strong{font-size:13px}.team-client-detail-copy>small{font-size:10px;color:#8792a0}
+.team-client-projects{display:grid;gap:6px;margin-top:4px}.team-project-link{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 10px;border:1px solid #ffffff10;border-radius:8px;background:#ffffff04;color:#dfe5ec;font-size:11px;cursor:pointer}.team-project-link:hover{border-color:#c6f08b60;background:#c6f08b08}.team-project-link span{color:#c6f08b;font-size:9px;font-weight:800;letter-spacing:.4px}
+@media(max-width:520px){.team-clients-modal{padding:15px}.team-client-detail{flex-wrap:wrap}.team-client-detail>.text-button{margin-left:44px}}
