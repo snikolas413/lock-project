@@ -50,6 +50,7 @@ function App() {
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
   const [teamClientsWorkspace, setTeamClientsWorkspace] = useState<string | null>(null);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [activePage, setActivePage] = useState<'overview' | 'projects' | 'tasks' | 'clients'>('overview');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -336,6 +337,7 @@ function App() {
 
   function openProject(projectId: string) {
     setActiveProjectId(projectId);
+    setActivePage('tasks');
     setIssueProjectFilter(projectId);
     setIssueClientFilter('all');
     setTaskProject(projectId);
@@ -347,16 +349,27 @@ function App() {
 
   function closeProject() {
     setActiveProjectId(null);
+    setActivePage('overview');
     setIssueProjectFilter('all');
     setIssueClientFilter('all');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   return <main className="app-shell">
-    <header className="topbar"><a className="brand" href="#"><span className="brand-mark">L</span><span>lock<span className="brand-light">project</span></span></a><span className="topbar-note">Seu trabalho, com direção.</span>{session && <button className="button button-quiet" onClick={signOut}>Sair</button>}</header>
+    <header className="topbar"><a className="brand" href="#" onClick={event=>{event.preventDefault();closeProject();setActivePage('overview');}}><span className="brand-mark">L</span><span>lock<span className="brand-light">project</span></span></a>{session && <><span className="topbar-context">{workspaces.find(w=>w.id===selectedWorkspace)?.name || 'Workspace'}</span><span className="topbar-user">{session.user.email}</span><button className="button button-quiet" onClick={signOut}>Sair</button></>}</header>
+    {session && <aside className="product-sidebar">
+      <div className="sidebar-group-label">WORKSPACE</div>
+      <button className={activePage==='overview'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('overview');}}>▦ <span>Visão geral</span></button>
+      <button className={activePage==='projects'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('projects');}}>◇ <span>Projetos</span><small>{projects.length}</small></button>
+      <button className={activePage==='clients'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('clients');}}>◎ <span>Clientes</span><small>{clients.length}</small></button>
+      <button className={activePage==='tasks'||activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{setActiveProjectId(null);setActivePage('tasks');setIssueProjectFilter('all');setIssueClientFilter('all');}}>☷ <span>Tarefas</span><small>{issues.length}</small></button>
+      <div className="sidebar-divider"/><div className="sidebar-group-label">SEUS PROJETOS</div>
+      {projects.slice(0,8).map(project=><button key={project.id} className={'sidebar-project '+(activeProjectId===project.id?'active':'')} onClick={()=>openProject(project.id)}><span>{project.key.slice(0,2)}</span><label>{project.name}</label></button>)}
+      <div className="sidebar-bottom"><span className="sidebar-avatar">{(session.user.email?.[0]??'U').toUpperCase()}</span><div><strong>{session.user.user_metadata?.display_name||session.user.email?.split('@')[0]}</strong><small>{session.user.email}</small></div></div>
+    </aside>}
     {!isSupabaseConfigured && <div className="notice"><strong>Configuração pendente</strong><span>Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env local para habilitar a autenticação.</span></div>}
     <section className="content-panel">
-      {!ready ? <div className="loading">Preparando seu espaço…</div> : session ? <div className="dashboard dashboard-home">
+      {!ready ? <div className="loading">Preparando seu espaço…</div> : session ? <div className={'dashboard dashboard-home page-'+activePage+(activeProjectId?' page-project':'')}>
         <div className="dashboard-heading"><div><p className="eyebrow"><span className="eyebrow-dot"/> {activeProjectId ? 'ÁREA DO PROJETO' : 'VISÃO GERAL'}</p><h1>{activeProjectId ? projects.find(project => project.id === activeProjectId)?.name || 'Projeto' : `Bom te ver, ${session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'por aí'}.`}</h1><p className="muted">{activeProjectId ? `${projects.find(project => project.id === activeProjectId)?.key || ''} · ${clients.find(client => client.id === projects.find(project => project.id === activeProjectId)?.client_id)?.name || 'Sem cliente'}` : 'Aqui está um panorama do que está acontecendo nos seus espaços.'}</p></div><span className="avatar">{(session.user.email?.[0] ?? 'L').toUpperCase()}</span></div>
         {!activeProjectId && <><div className="stats-grid">
           <article className="stat-card"><span className="stat-icon">▦</span><span className="stat-label">Times</span><strong>{workspaces.length}</strong><small>Equipes cadastradas</small></article>
