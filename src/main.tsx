@@ -36,7 +36,7 @@ function App() {
   const [issueClientFilter, setIssueClientFilter] = useState('all');
   const [issueStatusFilter, setIssueStatusFilter] = useState('all');
   const [issuePriorityFilter, setIssuePriorityFilter] = useState('all');
-  const [taskView, setTaskView] = useState<'list' | 'kanban'>('kanban');
+  const [taskView, setTaskView] = useState<'list' | 'kanban' | 'hierarchy'>('kanban');
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [issueComments, setIssueComments] = useState<IssueComment[]>([]);
   const [commentDraft, setCommentDraft] = useState('');
@@ -386,6 +386,7 @@ function App() {
           <div className="task-view-switch" role="group" aria-label="Visualização das tarefas">
             <button type="button" className={taskView === 'kanban' ? 'active' : ''} onClick={() => setTaskView('kanban')}>▦ Quadro Kanban</button>
             <button type="button" className={taskView === 'list' ? 'active' : ''} onClick={() => setTaskView('list')}>☷ Lista</button>
+            <button type="button" className={taskView === 'hierarchy' ? 'active' : ''} onClick={() => setTaskView('hierarchy')}>⌘ Hierarquia</button>
           </div>
           {taskView === 'kanban' ? <div className="kanban-board">
             {[
@@ -413,6 +414,27 @@ function App() {
                 </div>
               </section>;
             })}
+          </div> : taskView === 'hierarchy' ? <div className="issue-hierarchy">
+            {(() => {
+              const visibleIds = new Set(filteredIssues.map(issue => issue.id));
+              const hierarchyItems = filteredIssues.filter(issue => !issue.parent_issue_id || !visibleIds.has(issue.parent_issue_id));
+              const renderHierarchyItem = (issue: Issue, depth = 0): React.ReactNode => {
+                const children = filteredIssues.filter(child => child.parent_issue_id === issue.id);
+                const typeLabel = ({ epic: 'ÉPICO', story: 'HISTÓRIA', task: 'TAREFA', bug: 'BUG', subtask: 'SUBTAREFA' } as Record<string, string>)[issue.type] ?? 'TAREFA';
+                return <div className="hierarchy-node" key={issue.id}>
+                  <article className="hierarchy-row" style={{ marginLeft: depth * 22 }}>
+                    <span className={'hierarchy-type hierarchy-type-' + issue.type}>{typeLabel}</span>
+                    <div className="hierarchy-main"><strong>{issue.title}</strong><small>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number} · {projects.find(p => p.id === issue.project_id)?.name ?? 'Projeto'}</small></div>
+                    <span className={'priority priority-' + issue.priority}>{({lowest:'Mínima',low:'Baixa',medium:'Média',high:'Alta',highest:'Urgente'} as Record<string,string>)[issue.priority] ?? issue.priority}</span>
+                    <span className={'hierarchy-status status-text-' + issue.status}>{({backlog:'Backlog',todo:'A fazer',in_progress:'Em andamento',in_review:'Em revisão',done:'Concluída',cancelled:'Cancelada'} as Record<string,string>)[issue.status] ?? issue.status}</span>
+                    <span className="hierarchy-assignee">{issue.assignee_id ? profiles.find(profile => profile.id === issue.assignee_id)?.display_name || 'Membro da equipe' : 'Sem responsável'}</span>
+                    <div className="hierarchy-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button></div>
+                  </article>
+                  {children.map(child => renderHierarchyItem(child, depth + 1))}
+                </div>;
+              };
+              return hierarchyItems.length ? hierarchyItems.map(issue => renderHierarchyItem(issue)) : <div className="empty-state compact-empty"><strong>Nenhum item nessa combinação de filtros</strong><p>Limpe os filtros para ver a hierarquia completa.</p></div>;
+            })()}
           </div> : <div className="task-table">
             <div className="task-table-head"><span>Tarefa</span><span>Status</span><span>Responsável</span><span>Prioridade</span><span>Prazo</span><span>Etiquetas</span><span>Ações</span></div>
             {filteredIssues.length ? filteredIssues.map(issue => <article className="task-table-row" key={issue.id}>
