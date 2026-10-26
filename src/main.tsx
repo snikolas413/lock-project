@@ -5,7 +5,8 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 import './styles.css';
 
 type Workspace = { id: string; name: string; slug: string; created_at: string };
-type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; updated_at: string };
+type Client = { id: string; workspace_id: string; name: string; slug: string; description: string | null; status: string; created_at: string };
+type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; client_id: string; updated_at: string };
 type Issue = { id: string; title: string; description: string | null; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; assignee_id: string | null };
 type TeamMember = { workspace_id: string; user_id: string; role: string };
 type Profile = { id: string; display_name: string | null };
@@ -21,6 +22,9 @@ function App() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [workspaceName, setWorkspaceName] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientDescription, setClientDescription] = useState('');
+  const [projectClient, setProjectClient] = useState('');
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
@@ -42,6 +46,7 @@ function App() {
   const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -67,7 +72,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) { setWorkspaces([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
+    if (!session) { setWorkspaces([]); setClients([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
     void loadWorkspaces();
   }, [session]);
 
@@ -77,7 +82,12 @@ function App() {
     const nextWorkspaces = (data ?? []) as Workspace[];
     setWorkspaces(nextWorkspaces);
     setSelectedWorkspace(current => current && nextWorkspaces.some(w => w.id === current) ? current : (nextWorkspaces[0]?.id ?? ''));
-    if (!nextWorkspaces.length) { setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
+    if (!nextWorkspaces.length) { setClients([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
+    const { data: clientData, error: clientError } = await supabase.from('clients').select('id,workspace_id,name,slug,description,status,created_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('name');
+    if (clientError) { setError(clientError.message); return; }
+    const nextClients = (clientData ?? []) as Client[];
+    setClients(nextClients);
+    setProjectClient(current => current && nextClients.some(client => client.id === current) ? current : (nextClients.find(client => client.workspace_id === (selectedWorkspace || nextWorkspaces[0]?.id))?.id ?? ''));
     const { data: memberData, error: memberError } = await supabase.from('workspace_members').select('workspace_id,user_id,role').in('workspace_id', nextWorkspaces.map(w => w.id));
     if (memberError) setError(memberError.message);
     const nextMembers = (memberData ?? []) as TeamMember[];
@@ -88,7 +98,7 @@ function App() {
       if (profileError) setError(profileError.message);
       else setProfiles((profileData ?? []) as Profile[]);
     } else setProfiles([]);
-    const { data: projectData, error: projectError } = await supabase.from('projects').select('id,name,key,description,status,workspace_id,updated_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('updated_at', { ascending: false });
+    const { data: projectData, error: projectError } = await supabase.from('projects').select('id,name,key,description,status,workspace_id,client_id,updated_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('updated_at', { ascending: false });
     if (projectError) { setError(projectError.message); return; }
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
@@ -159,9 +169,22 @@ function App() {
     const name = workspaceName.trim(); if (!name) return;
     const slug = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'workspace';
     setBusy(true); setError(''); setMessage('');
-    const { error } = await supabase.from('workspaces').insert({ name, slug, created_by: session.user.id });
+    const { data: newWorkspace, error } = await supabase.from('workspaces').insert({ name, slug, created_by: session.user.id }).select('id').single();
     if (error) setError(error.message);
-    else { setWorkspaceName(''); setMessage('Workspace criado com sucesso.'); await loadWorkspaces(); }
+    else { setWorkspaceName(''); setMessage('Time criado com sucesso.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
+  async function createClient(event: FormEvent) {
+    event.preventDefault();
+    if (!session?.user || !selectedWorkspace || !clientName.trim()) return;
+    const name = clientName.trim();
+    const slugBase = name.normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'cliente';
+    const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
+    setBusy(true); setError(''); setMessage('');
+    const { data, error } = await supabase.from('clients').insert({ workspace_id: selectedWorkspace, name, slug, description: clientDescription.trim() || null, created_by: session.user.id }).select('id').single();
+    if (error) setError(error.message);
+    else { setClientName(''); setClientDescription(''); if (data?.id) setProjectClient(data.id); setMessage('Cliente criado. Agora você pode vincular vários projetos a ele.'); await loadWorkspaces(); }
     setBusy(false);
   }
 
@@ -284,16 +307,26 @@ function App() {
         <div className="dashboard-columns">
           <section className="dashboard-section"><div className="section-title"><div><p className="eyebrow">SEUS PROJETOS</p><h2>Projetos recentes</h2></div><span className="count">{projects.length}</span></div>
             {projects.length ? <div className="project-list">{projects.slice(0,6).map(p=><article className="project-row" key={p.id}><span className="project-mark">{p.key.slice(0,2)}</span><div className="project-copy"><strong>{p.name}</strong><span>{p.key} · {p.status}</span></div><span className="project-status">Ativo</span></article>)}</div> : <div className="empty-state compact-empty"><span className="empty-icon">◇</span><strong>Seu primeiro projeto começa aqui</strong><p>Crie um projeto para reunir tarefas e acompanhar as entregas.</p></div>}
+            <section className="client-management">
+              <div className="section-title"><div><p className="eyebrow">CLIENTES DO TIME</p><h2>Clientes</h2></div><span className="count">{clients.filter(client=>client.workspace_id===(selectedWorkspace||workspaces[0]?.id)).length}</span></div>
+              <div className="client-list">{clients.filter(client=>client.workspace_id===(selectedWorkspace||workspaces[0]?.id)).map(client=><article className="client-row" key={client.id}><span className="client-mark">{client.name.slice(0,1).toUpperCase()}</span><div className="client-copy"><strong>{client.name}</strong><span>{projects.filter(project=>project.client_id===client.id).length} projetos · {client.status==='active'?'Ativo':'Arquivado'}</span>{client.description&&<small>{client.description}</small>}</div></article>)}</div>
+              <form className="client-create-form" onSubmit={createClient}>
+                <div className="field"><label htmlFor="client-workspace">Time</label><select id="client-workspace" value={selectedWorkspace||workspaces[0]?.id||''} onChange={event=>{setSelectedWorkspace(event.target.value);setProjectClient(clients.find(client=>client.workspace_id===event.target.value)?.id||'');}} required>{workspaces.map(workspace=><option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select></div>
+                <div className="field"><label htmlFor="client-name">Nome do cliente</label><input id="client-name" value={clientName} onChange={event=>setClientName(event.target.value)} placeholder="Ex.: Acme, Loja Central" maxLength={160} required/></div>
+                <div className="field"><label htmlFor="client-description">Descrição <span className="optional">(opcional)</span></label><input id="client-description" value={clientDescription} onChange={event=>setClientDescription(event.target.value)} placeholder="Contexto ou contato principal" maxLength={500}/></div>
+                <button className="button button-primary" disabled={busy||!clientName.trim()||!selectedWorkspace}>{busy?'Salvando…':'Adicionar cliente'} ↗</button>
+              </form>
+            </section>
             <form className="create-project-form" onSubmit={async event => {
               event.preventDefault();
-              if (!session?.user || !workspaces.length || !projectName.trim()) return;
+              if (!session?.user || !workspaces.length || !projectName.trim() || !projectClient) return;
               setBusy(true); setError(''); setMessage('');
               const base = projectName.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'').slice(0,5) || 'PROJ';
-              const { error } = await supabase.from('projects').insert({name:projectName.trim(),key:base+Date.now().toString().slice(-4),description:projectDescription.trim()||null,workspace_id:selectedWorkspace||workspaces[0].id,created_by:session.user.id});
+              const { error } = await supabase.from('projects').insert({name:projectName.trim(),key:base+Date.now().toString().slice(-4),description:projectDescription.trim()||null,workspace_id:selectedWorkspace||workspaces[0].id,client_id:projectClient,created_by:session.user.id});
               if(error) setError(error.message); else {setProjectName('');setProjectDescription('');setMessage('Projeto criado com sucesso.'); await loadWorkspaces();}
               setBusy(false);
             }}><div className="section-title"><div><p className="eyebrow">NOVO PROJETO</p><h2>Comece uma iniciativa</h2></div></div>
-              {workspaces.length ? <><div className="field"><label htmlFor="project-workspace">Workspace</label><select id="project-workspace" value={selectedWorkspace || workspaces[0].id} onChange={e=>setSelectedWorkspace(e.target.value)}>{workspaces.map(w=><option value={w.id} key={w.id}>{w.name}</option>)}</select></div><div className="field"><label htmlFor="project-name">Nome do projeto</label><input id="project-name" value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Ex.: Redesign do produto" maxLength={100} required/></div><div className="field"><label htmlFor="project-description">Descrição <span className="optional">(opcional)</span></label><textarea id="project-description" value={projectDescription} onChange={e=>setProjectDescription(e.target.value)} placeholder="Qual é o objetivo deste projeto?" rows={2} maxLength={500}/></div><button className="button button-primary" disabled={busy||!projectName.trim()}>{busy?'Criando…':'Criar projeto'} ↗</button></> : <p className="muted">Crie um workspace abaixo antes de adicionar projetos.</p>}
+              {workspaces.length ? <><div className="field"><label htmlFor="project-workspace">Time</label><select id="project-workspace" value={selectedWorkspace || workspaces[0].id} onChange={e=>{const id=e.target.value;setSelectedWorkspace(id);setProjectClient(clients.find(client=>client.workspace_id===id)?.id||'');}}>{workspaces.map(w=><option value={w.id} key={w.id}>{w.name}</option>)}</select></div><div className="field"><label htmlFor="project-client">Cliente</label><select id="project-client" value={projectClient || clients.find(client=>client.workspace_id===(selectedWorkspace||workspaces[0].id))?.id || ''} onChange={e=>setProjectClient(e.target.value)} required>{clients.filter(client=>client.workspace_id===(selectedWorkspace||workspaces[0].id)&&client.status==='active').map(client=><option value={client.id} key={client.id}>{client.name}</option>)}</select>{!clients.some(client=>client.workspace_id===(selectedWorkspace||workspaces[0].id)&&client.status==='active')&&<p className="muted">Cadastre um cliente para criar projetos neste time.</p>}</div><div className="field"><label htmlFor="project-name">Nome do projeto</label><input id="project-name" value={projectName} onChange={e=>setProjectName(e.target.value)} placeholder="Ex.: Redesign do produto" maxLength={100} required/></div><div className="field"><label htmlFor="project-description">Descrição <span className="optional">(opcional)</span></label><textarea id="project-description" value={projectDescription} onChange={e=>setProjectDescription(e.target.value)} placeholder="Qual é o objetivo deste projeto?" rows={2} maxLength={500}/></div><button className="button button-primary" disabled={busy||!projectName.trim()||!projectClient||!clients.some(client=>client.id===projectClient&&client.workspace_id===(selectedWorkspace||workspaces[0].id))}>{busy?'Criando…':'Criar projeto'} ↗</button></> : <p className="muted">Crie um workspace abaixo antes de adicionar projetos.</p>}
             </form>
           </section>
           <section className="dashboard-section"><div className="section-title"><div><p className="eyebrow">ACOMPANHAMENTO</p><h2>Atividade recente</h2></div><span className="count">{issues.length}</span></div>
@@ -382,9 +415,9 @@ function App() {
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
           </div>}
         </section>
-        <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">SEUS AMBIENTES</p><h2>Workspaces</h2></div><span className="count">{workspaces.length}</span></div>
-          {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card" key={w.id}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
-          <form className="workspace-form" onSubmit={createWorkspace}><label htmlFor="workspace-name">Criar workspace</label><div className="form-row"><input id="workspace-name" value={workspaceName} onChange={e=>setWorkspaceName(e.target.value)} placeholder="Ex.: Produto, Marketing, Minha equipe" maxLength={120} required/><button className="button button-primary" disabled={busy}>{busy?'Criando…':'Criar workspace'} ↗</button></div></form>
+        <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
+          {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card" key={w.id}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{clients.filter(c=>c.workspace_id===w.id).length} clientes · {projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
+          <form className="workspace-form" onSubmit={createWorkspace}><label htmlFor="workspace-name">Criar time</label><div className="form-row"><input id="workspace-name" value={workspaceName} onChange={e=>setWorkspaceName(e.target.value)} placeholder="Ex.: Time de Produto, Atendimento, Design" maxLength={120} required/><button className="button button-primary" disabled={busy}>{busy?'Criando…':'Criar time'} ↗</button></div></form>
         </section>
         {selectedIssue && <div className="issue-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setSelectedIssue(null); }}>
           <section className="issue-modal" role="dialog" aria-modal="true" aria-labelledby="issue-modal-title">
