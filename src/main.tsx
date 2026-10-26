@@ -38,6 +38,8 @@ function App() {
   const [issuePriorityFilter, setIssuePriorityFilter] = useState('all');
   const [taskView, setTaskView] = useState<'list' | 'kanban' | 'hierarchy' | 'timeline' | 'roadmap'>('kanban');
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const [draggingIssueId, setDraggingIssueId] = useState<string | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [issueComments, setIssueComments] = useState<IssueComment[]>([]);
   const [commentDraft, setCommentDraft] = useState('');
@@ -465,13 +467,17 @@ function App() {
               { id: 'done', label: 'Concluída' }, { id: 'cancelled', label: 'Cancelada' }
             ].map(column => {
               const columnIssues = filteredIssues.filter(issue => issue.status === column.id);
-              return <section className="kanban-column" key={column.id}
-                onDragOver={event => event.preventDefault()}
-                onDrop={event => { event.preventDefault(); const issueId = event.dataTransfer.getData('text/plain'); const issue = filteredIssues.find(item => item.id === issueId); if (issue) void moveIssueToStatus(issue, column.id); }}>
+              return <section className={'kanban-column' + (dragOverStatus === column.id ? ' kanban-column-drag-over' : '')} key={column.id}
+                onDragEnter={event => { event.preventDefault(); setDragOverStatus(column.id); }}
+                onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; if (dragOverStatus !== column.id) setDragOverStatus(column.id); }}
+                onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragOverStatus(current => current === column.id ? null : current); }}
+                onDrop={event => { event.preventDefault(); const issueId = event.dataTransfer.getData('text/plain'); const issue = filteredIssues.find(item => item.id === issueId); setDragOverStatus(null); setDraggingIssueId(null); if (issue) void moveIssueToStatus(issue, column.id); }}>
                 <header className="kanban-column-heading"><span className={'kanban-status-dot status-' + column.id}/><strong>{column.label}</strong><span className="count">{columnIssues.length}</span></header>
+                <button type="button" className="kanban-add-task" onClick={() => { setEditingIssueId(null); setTaskProject(activeProjectId || (issueProjectFilter !== 'all' ? issueProjectFilter : projects[0]?.id || '')); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskStatus(column.id); setTaskPriority('medium'); setTaskDueDate(''); setTaskAssignee(''); setQuickCreateOpen(true); document.getElementById('task-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}>＋ Adicionar tarefa</button>
                 <div className="kanban-cards">
-                  {columnIssues.map(issue => <article className="kanban-card" key={issue.id} draggable={!busy}
-                    onDragStart={event => { event.dataTransfer.setData('text/plain', issue.id); event.dataTransfer.effectAllowed = 'move'; }}>
+                  {columnIssues.map(issue => <article className={'kanban-card' + (draggingIssueId === issue.id ? ' kanban-card-dragging' : '')} key={issue.id} draggable={!busy}
+                    onDragStart={event => { setDraggingIssueId(issue.id); setDragOverStatus(null); event.dataTransfer.setData('text/plain', issue.id); event.dataTransfer.effectAllowed = 'move'; }}
+                    onDragEnd={() => { setDraggingIssueId(null); setDragOverStatus(null); }}>
                     <div className="kanban-card-top"><span>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}</span><span className={'priority priority-' + issue.priority}>{({lowest:'Mínima',low:'Baixa',medium:'Média',high:'Alta',highest:'Urgente'} as Record<string,string>)[issue.priority] ?? issue.priority}</span></div>
                     <strong className="kanban-card-title">{issue.title}</strong>
                     {issue.description && <p className="kanban-card-description">{issue.description}</p>}
