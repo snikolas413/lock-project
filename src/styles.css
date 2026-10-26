@@ -345,3 +345,14 @@
  .gantt-row{grid-template-columns:minmax(230px,280px) minmax(520px,1fr)}
  .gantt-row-actions input{width:102px}
 }
+
+/* Task dependency links in Timeline */
+.gantt-dependencies{display:flex;align-items:flex-start;gap:5px;flex-wrap:wrap;margin-top:5px;color:#91a0af;font-size:9px}
+.gantt-dependencies>strong{padding:3px 5px;border-radius:4px;background:#ffffff08;font-size:9px}
+.gantt-dependencies.is-blocked>strong{background:#e58b8618;color:#ff9e91}
+.gantt-dependency-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:3px 6px;border:1px solid #ffffff16;border-radius:5px;color:#aab6c3;overflow-wrap:anywhere}
+.gantt-dependency-chip button{border:0;background:transparent;color:#ff9e91;font-size:12px;cursor:pointer}
+.gantt-dependency-add{display:flex;gap:4px;flex-wrap:wrap;width:100%}
+.gantt-dependency-add select{max-width:220px;min-width:130px;padding:4px 6px;border:1px solid #ffffff18;border-radius:5px;background:#0a0f15;color:#aab6c3;font:inherit;font-size:9px}
+.gantt-dependency-add button{padding:4px 7px;border:1px solid #c6f08b35;border-radius:5px;background:#c6f08b0c;color:#c6f08b;font:inherit;font-size:9px;cursor:pointer}
+.gantt-dependency-add button:disabled{opacity:.45;cursor:not-allowed}
