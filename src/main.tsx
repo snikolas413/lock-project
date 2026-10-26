@@ -7,7 +7,7 @@ import './styles.css';
 type Workspace = { id: string; name: string; slug: string; created_at: string };
 type Client = { id: string; workspace_id: string; name: string; slug: string; description: string | null; status: string; created_at: string };
 type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; client_id: string; updated_at: string };
-type Issue = { id: string; title: string; description: string | null; issue_number: number; type: string; parent_issue_id: string | null; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; assignee_id: string | null };
+type Issue = { id: string; title: string; description: string | null; issue_number: number; type: string; parent_issue_id: string | null; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; start_date: string | null; end_date: string | null; assignee_id: string | null };
 type TeamMember = { workspace_id: string; user_id: string; role: string };
 type Profile = { id: string; display_name: string | null };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
@@ -48,6 +48,9 @@ function App() {
   const [taskStatus, setTaskStatus] = useState('backlog');
   const [taskPriority, setTaskPriority] = useState('medium');
   const [taskDueDate, setTaskDueDate] = useState('');
+  const [taskStartDate, setTaskStartDate] = useState('');
+  const [taskEndDate, setTaskEndDate] = useState('');
+  const [timelineScale, setTimelineScale] = useState<'week' | 'month'>('week');
   const [taskAssignee, setTaskAssignee] = useState('');
   const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
@@ -112,7 +115,7 @@ function App() {
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
     if (!nextProjects.length) { setIssues([]); setLabels([]); setIssueLabels([]); return; }
-    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,type,parent_issue_id,status,priority,updated_at,project_id,due_date,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
+    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,type,parent_issue_id,status,priority,updated_at,project_id,due_date,start_date,end_date,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else {
       const nextIssues = (issueData ?? []) as Issue[];
@@ -243,7 +246,9 @@ function App() {
       project_id: projectId,
       status: taskStatus,
       priority: taskPriority,
-      due_date: taskDueDate || null,
+      due_date: taskDueDate || taskEndDate || null,
+      start_date: taskStartDate || null,
+      end_date: taskEndDate || taskDueDate || null,
       assignee_id: taskAssignee || null,
     };
     const result = editingIssueId
@@ -251,7 +256,7 @@ function App() {
       : await supabase.from('issues').insert({ ...payload, reporter_id: session.user.id });
     if (result.error) setError(result.error.message);
     else {
-      setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium');
+      setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskStartDate(''); setTaskEndDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium');
       setEditingIssueId(null); setQuickCreateOpen(false); setMessage(editingIssueId ? 'Tarefa atualizada.' : 'Tarefa criada com sucesso.');
       await loadWorkspaces();
     }
@@ -269,6 +274,8 @@ function App() {
     setTaskStatus(issue.status);
     setTaskPriority(issue.priority);
     setTaskDueDate(issue.due_date ?? '');
+    setTaskStartDate(issue.start_date ?? '');
+    setTaskEndDate(issue.end_date ?? issue.due_date ?? '');
     setTaskAssignee(issue.assignee_id ?? '');
     setError(''); setMessage('');
     document.getElementById('task-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -322,6 +329,14 @@ function App() {
     const { error } = await supabase.from('issues').update({ status }).eq('id', issue.id);
     if (error) setError(error.message);
     else { setMessage('Tarefa movida no quadro.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
+  async function saveTimelineDates(issue: Issue, startDate: string, endDate: string) {
+    if (startDate && endDate && startDate > endDate) { setError('A data de início não pode ser posterior ao término.'); return; }
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await supabase.from('issues').update({ start_date: startDate || null, end_date: endDate || null, due_date: endDate || issue.due_date || null }).eq('id', issue.id);
+    if (error) setError(error.message); else { setMessage('Período da tarefa atualizado.'); await loadWorkspaces(); }
     setBusy(false);
   }
 
@@ -413,9 +428,9 @@ function App() {
         </div></>}
         {activeProjectId && <div className="project-workspace-heading"><button type="button" className="button button-quiet" onClick={closeProject}>← Voltar ao dashboard</button><div><span className="eyebrow">PROJETO SELECIONADO</span><h2>{projects.find(project => project.id === activeProjectId)?.name}</h2><p className="muted">Escolha uma visualização para acompanhar e organizar as tarefas deste projeto.</p></div><span className="count">{filteredIssues.length} tarefas</span></div>}
         <section className="task-management" id="task-management">
-          <div className="section-title task-management-heading"><div><p className="eyebrow">{activeProjectId ? 'EXECUÇÃO DO PROJETO' : 'EXECUÇÃO'}</p><h2>{activeProjectId ? 'Tarefas do projeto' : 'Gerenciar tarefas'}</h2></div><div className="task-heading-actions"><span className="count">{activeProjectId ? filteredIssues.length : issues.length} tarefas</span>{activeProjectId && <button type="button" className="button button-primary" onClick={() => { setEditingIssueId(null); setTaskProject(activeProjectId); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskStatus('backlog'); setTaskPriority('medium'); setTaskDueDate(''); setTaskAssignee(''); setQuickCreateOpen(value => !value); }}>＋ Nova tarefa</button>}</div></div>
+          <div className="section-title task-management-heading"><div><p className="eyebrow">{activeProjectId ? 'EXECUÇÃO DO PROJETO' : 'EXECUÇÃO'}</p><h2>{activeProjectId ? 'Tarefas do projeto' : 'Gerenciar tarefas'}</h2></div><div className="task-heading-actions"><span className="count">{activeProjectId ? filteredIssues.length : issues.length} tarefas</span>{activeProjectId && <button type="button" className="button button-primary" onClick={() => { setEditingIssueId(null); setTaskProject(activeProjectId); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskStatus('backlog'); setTaskPriority('medium'); setTaskDueDate(''); setTaskStartDate(''); setTaskEndDate(''); setTaskAssignee(''); setQuickCreateOpen(value => !value); }}>＋ Nova tarefa</button>}</div></div>
           {(!activeProjectId || quickCreateOpen || editingIssueId) && <form id="task-form" className={'task-form '+(activeProjectId?'task-quick-create':'')} onSubmit={saveIssue}>
-            <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setQuickCreateOpen(false); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
+            <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setQuickCreateOpen(false); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskStartDate(''); setTaskEndDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
             <div className="task-form-grid">
               <div className="field task-title-field"><label htmlFor="task-title">Título da tarefa</label><input id="task-title" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Ex.: Revisar fluxo de cadastro" maxLength={240} required /></div>
               <div className="field"><label htmlFor="task-type">Tipo de item</label><select id="task-type" value={taskType} onChange={e => { setTaskType(e.target.value); setTaskParentIssue(''); }}><option value="epic">Épico</option><option value="story">História</option><option value="task">Tarefa</option><option value="bug">Bug</option><option value="subtask">Subtarefa</option></select></div>
@@ -425,7 +440,9 @@ function App() {
               <div className="field"><label htmlFor="task-status">Status</label><select id="task-status" value={taskStatus} onChange={e => setTaskStatus(e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
               <div className="field"><label htmlFor="task-priority">Prioridade</label><select id="task-priority" value={taskPriority} onChange={e => setTaskPriority(e.target.value)}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
               <div className="field"><label htmlFor="task-assignee">Responsável <span className="optional">(opcional)</span></label><select id="task-assignee" value={taskAssignee} onChange={e => setTaskAssignee(e.target.value)}><option value="">Sem responsável</option>{teamMembers.filter(member => member.workspace_id === projects.find(p => p.id === (taskProject || projects[0]?.id))?.workspace_id).map(member => <option key={member.user_id} value={member.user_id}>{profiles.find(profile => profile.id === member.user_id)?.display_name || `Membro ${member.user_id.slice(0, 8)}`}</option>)}</select></div>
-              <div className="field"><label htmlFor="task-due-date">Prazo <span className="optional">(opcional)</span></label><input id="task-due-date" type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} /></div>
+              <div className="field"><label htmlFor="task-start-date">Início <span className="optional">(opcional)</span></label><input id="task-start-date" type="date" value={taskStartDate} max={taskEndDate || taskDueDate || undefined} onChange={e => setTaskStartDate(e.target.value)} /></div>
+              <div className="field"><label htmlFor="task-end-date">Término <span className="optional">(opcional)</span></label><input id="task-end-date" type="date" value={taskEndDate} min={taskStartDate || undefined} onChange={e => { setTaskEndDate(e.target.value); setTaskDueDate(e.target.value); }} /></div>
+              <div className="field"><label htmlFor="task-due-date">Prazo legado <span className="optional">(opcional)</span></label><input id="task-due-date" type="date" value={taskDueDate} min={taskStartDate || undefined} onChange={e => { setTaskDueDate(e.target.value); if (!taskEndDate) setTaskEndDate(e.target.value); }} /></div>
             </div>
             <button className="button button-primary" disabled={busy || !projects.length || !taskTitle.trim()}>{busy ? 'Salvando…' : editingIssueId ? 'Salvar alterações' : 'Criar tarefa'} ↗</button>
             {!projects.length && <p className="muted">Crie um projeto antes de cadastrar tarefas.</p>}
@@ -473,7 +490,7 @@ function App() {
                 onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragOverStatus(current => current === column.id ? null : current); }}
                 onDrop={event => { event.preventDefault(); const issueId = event.dataTransfer.getData('text/plain'); const issue = filteredIssues.find(item => item.id === issueId); setDragOverStatus(null); setDraggingIssueId(null); if (issue) void moveIssueToStatus(issue, column.id); }}>
                 <header className="kanban-column-heading"><span className={'kanban-status-dot status-' + column.id}/><strong>{column.label}</strong><span className="count">{columnIssues.length}</span></header>
-                <button type="button" className="kanban-add-task" onClick={() => { setEditingIssueId(null); setTaskProject(activeProjectId || (issueProjectFilter !== 'all' ? issueProjectFilter : projects[0]?.id || '')); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskStatus(column.id); setTaskPriority('medium'); setTaskDueDate(''); setTaskAssignee(''); setQuickCreateOpen(true); document.getElementById('task-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}>＋ Adicionar tarefa</button>
+                <button type="button" className="kanban-add-task" onClick={() => { setEditingIssueId(null); setTaskProject(activeProjectId || (issueProjectFilter !== 'all' ? issueProjectFilter : projects[0]?.id || '')); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskStatus(column.id); setTaskPriority('medium'); setTaskDueDate(''); setTaskStartDate(''); setTaskEndDate(''); setTaskAssignee(''); setQuickCreateOpen(true); document.getElementById('task-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}>＋ Adicionar tarefa</button>
                 <div className="kanban-cards">
                   {columnIssues.map(issue => <article className={'kanban-card' + (draggingIssueId === issue.id ? ' kanban-card-dragging' : '')} key={issue.id} draggable={!busy}
                     onDragStart={event => { setDraggingIssueId(issue.id); setDragOverStatus(null); event.dataTransfer.setData('text/plain', issue.id); event.dataTransfer.effectAllowed = 'move'; }}
@@ -492,41 +509,49 @@ function App() {
             })}
           </div> : taskView === 'timeline' ? <div className="timeline-view gantt-view">
             {(() => {
-              const dated = [...filteredIssues].filter(issue => issue.due_date).sort((a,b) => (a.due_date || '').localeCompare(b.due_date || ''));
-              const undated = filteredIssues.filter(issue => !issue.due_date);
-              const day = 86400000;
+              const dated = [...filteredIssues].filter(issue => issue.start_date || issue.end_date || issue.due_date).sort((a,b) => (a.start_date || a.end_date || a.due_date || '').localeCompare(b.start_date || b.end_date || b.due_date || ''));
+              const undated = filteredIssues.filter(issue => !issue.start_date && !issue.end_date && !issue.due_date);
+              const dayMs = 86400000;
+              const dateAt = (value: string) => new Date(value + 'T00:00:00Z');
+              const iso = (date: Date) => date.toISOString().slice(0,10);
               const today = new Date(); today.setHours(0,0,0,0);
-              const first = dated.length ? new Date(dated[0].due_date + 'T00:00:00Z') : new Date(today.getTime() - 14 * day);
-              const last = dated.length ? new Date(dated[dated.length - 1].due_date + 'T00:00:00Z') : new Date(today.getTime() + 30 * day);
-              const start = new Date(Math.min(first.getTime(), today.getTime()) - 7 * day);
-              const end = new Date(Math.max(last.getTime(), today.getTime()) + 14 * day);
-              const total = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / day));
+              const todayIso = iso(today);
+              const allDates = dated.flatMap(issue => [issue.start_date,issue.end_date,issue.due_date].filter((value): value is string => !!value)).map(dateAt);
+              const earliest = allDates.length ? Math.min(...allDates.map(date => date.getTime())) : today.getTime() - 14 * dayMs;
+              const latest = allDates.length ? Math.max(...allDates.map(date => date.getTime())) : today.getTime() + 30 * dayMs;
+              const start = new Date(Math.min(earliest,today.getTime()) - (timelineScale === 'week' ? 7 : 14) * dayMs);
+              const end = new Date(Math.max(latest,today.getTime()) + (timelineScale === 'week' ? 14 : 30) * dayMs);
+              const totalDays = Math.max(1,Math.ceil((end.getTime()-start.getTime())/dayMs));
+              const position = (date: string) => Math.max(0,Math.min(100,((dateAt(date).getTime()-start.getTime())/dayMs/totalDays)*100));
               const monthMarks: {label:string;left:number;width:number}[] = [];
-              let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-              while (cursor < end) {
-                const next = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
-                const left = Math.max(0, (cursor.getTime()-start.getTime())/day/total*100);
-                const right = Math.min(100, (next.getTime()-start.getTime())/day/total*100);
-                monthMarks.push({label:new Intl.DateTimeFormat('pt-BR',{month:'short',year:'2-digit'}).format(cursor),left,width:Math.max(0,right-left)});
-                cursor = next;
-              }
-              const position = (date:string) => Math.max(0,Math.min(100,((new Date(date+'T00:00:00Z').getTime()-start.getTime())/day/total)*100));
+              let monthCursor = new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth(),1));
+              while(monthCursor<end){const next=new Date(Date.UTC(monthCursor.getUTCFullYear(),monthCursor.getUTCMonth()+1,1));const left=Math.max(0,(monthCursor.getTime()-start.getTime())/dayMs/totalDays*100);const right=Math.min(100,(next.getTime()-start.getTime())/dayMs/totalDays*100);monthMarks.push({label:new Intl.DateTimeFormat('pt-BR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(monthCursor),left,width:Math.max(0,right-left)});monthCursor=next;}
+              const weekMarks: {label:string;left:number;width:number}[] = [];
+              let weekCursor = new Date(start); weekCursor.setUTCDate(weekCursor.getUTCDate()-((weekCursor.getUTCDay()+6)%7));
+              while(weekCursor<end){const next=new Date(weekCursor.getTime()+7*dayMs);const left=Math.max(0,(weekCursor.getTime()-start.getTime())/dayMs/totalDays*100);const right=Math.min(100,(next.getTime()-start.getTime())/dayMs/totalDays*100);weekMarks.push({label:new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(weekCursor),left,width:Math.max(0,right-left)});weekCursor=next;}
+              const marks = timelineScale === 'week' ? weekMarks : monthMarks;
               return <>
-                <div className="gantt-toolbar"><div><strong>Planejamento por prazo</strong><span>{dated.length} com prazo · {undated.length} sem prazo</span></div><span className="gantt-legend"><i/> Prazo estimado</span></div>
+                <div className="gantt-toolbar"><div><strong>Planejamento por período</strong><span>{dated.length} com período · {undated.length} sem datas · hoje {new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(today)}</span></div><div className="gantt-toolbar-actions"><span className="gantt-legend"><i/> Período</span><button type="button" className={timelineScale==='week'?'active':''} onClick={()=>setTimelineScale('week')}>Semanas</button><button type="button" className={timelineScale==='month'?'active':''} onClick={()=>setTimelineScale('month')}>Meses</button></div></div>
                 <div className="gantt-scroll"><div className="gantt-canvas">
-                  <div className="gantt-ruler"><div className="gantt-task-label">Tarefa</div><div className="gantt-calendar">{monthMarks.map((month,index)=><span key={index} style={{left:month.left+'%',width:month.width+'%'}}>{month.label}</span>)}</div></div>
+                  <div className="gantt-ruler"><div className="gantt-task-label">Tarefa / período</div><div className="gantt-calendar">{marks.map((mark,index)=><span key={index} style={{left:mark.left+'%',width:mark.width+'%'}}>{mark.label}</span>)}</div></div>
                   {dated.map(issue => {
-                    const due = position(issue.due_date!);
-                    const left = Math.max(0,due-(7/total*100));
-                    const width = Math.max(1.4,due-left);
-                    return <article className="gantt-row" key={issue.id}>
-                      <div className="gantt-task-label"><strong>{issue.title}</strong><small>{projects.find(p=>p.id===issue.project_id)?.key ?? 'TASK'}-{issue.issue_number} · {issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : ''}</small></div>
-                      <div className="gantt-track"><span className="gantt-grid-line" style={{left:position(today.toISOString().slice(0,10))+'%'}}/><button type="button" className={'gantt-bar gantt-'+issue.status} style={{left:left+'%',width:width+'%'}} title={issue.title+' · prazo '+issue.due_date} onClick={()=>setSelectedIssue(issue)}><span>{issue.title}</span></button><span className="gantt-due-marker" style={{left:due+'%'}}/></div>
+                    const endDate = issue.end_date || issue.due_date || issue.start_date!;
+                    const startDate = issue.start_date || endDate;
+                    const startPos = position(startDate);
+                    const endPos = position(endDate);
+                    const width = Math.max(1.2,endPos-startPos);
+                    const overdue = endDate < todayIso && issue.status !== 'done' && issue.status !== 'cancelled';
+                    const milestone = issue.type === 'epic' || startDate === endDate;
+                    const assigned = profiles.find(profile=>profile.id===issue.assignee_id)?.display_name || (issue.assignee_id ? 'Membro atribuído' : 'Sem responsável');
+                    const project = projects.find(p=>p.id===issue.project_id);
+                    return <article className={'gantt-row'+(overdue?' gantt-row-overdue':'')} key={issue.id}>
+                      <div className="gantt-task-label"><strong>{issue.title}</strong><small>{project?.key ?? 'TASK'}-{issue.issue_number} · {startDate===endDate?'Marco':new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(dateAt(startDate))+' – '+new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(dateAt(endDate))} · {assigned}</small><div className="gantt-row-actions"><label>Início<input aria-label={'Data de início de '+issue.title} type="date" value={issue.start_date || ''} max={issue.end_date || issue.due_date || undefined} onChange={event=>void saveTimelineDates(issue,event.target.value,issue.end_date || issue.due_date || '')} disabled={busy}/></label><label>Término<input aria-label={'Data de término de '+issue.title} type="date" value={issue.end_date || issue.due_date || ''} min={issue.start_date || undefined} onChange={event=>void saveTimelineDates(issue,issue.start_date || '',event.target.value)} disabled={busy}/></label></div></div>
+                      <div className="gantt-track"><span className="gantt-grid-line" style={{left:position(todayIso)+'%'}}/>{milestone?<button type="button" className={'gantt-milestone gantt-'+issue.status+(overdue?' overdue':'')} style={{left:startPos+'%'}} title={issue.title+' · marco '+endDate} onClick={()=>setSelectedIssue(issue)}/>:<button type="button" className={'gantt-bar gantt-'+issue.status+(overdue?' gantt-overdue':'')} style={{left:startPos+'%',width:width+'%'}} title={issue.title+' · '+startDate+' a '+endDate} onClick={()=>setSelectedIssue(issue)}><span>{issue.title}</span></button>}{issue.due_date && <span className="gantt-due-marker" style={{left:position(issue.due_date)+'%'}}/>}{overdue&&<span className="gantt-overdue-flag" style={{left:endPos+'%'}}>Atrasada</span>}</div>
                     </article>;
                   })}
-                  {!dated.length && <div className="gantt-empty">Adicione prazos às tarefas para posicioná-las na linha do tempo.</div>}
+                  {!dated.length && <div className="gantt-empty">Defina início e término em uma tarefa para posicioná-la no calendário.</div>}
                 </div></div>
-                {undated.length>0 && <section className="gantt-undated"><h4>Sem data definida <span>{undated.length}</span></h4>{undated.map(issue=><div className="gantt-undated-row" key={issue.id}><span className={'kanban-status-dot status-'+issue.status}/><strong>{issue.title}</strong><small>{projects.find(p=>p.id===issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}</small><button type="button" className="text-button" onClick={()=>startEditingIssue(issue)}>Definir prazo / editar</button></div>)}</section>}
+                {undated.length>0 && <section className="gantt-undated"><h4>Sem período definido <span>{undated.length}</span></h4>{undated.map(issue=><div className="gantt-undated-row" key={issue.id}><span className={'kanban-status-dot status-'+issue.status}/><strong>{issue.title}</strong><small>{projects.find(p=>p.id===issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}</small><button type="button" className="text-button" onClick={()=>startEditingIssue(issue)}>Definir período</button></div>)}</section>}
                 {!filteredIssues.length && <div className="empty-state compact-empty"><strong>Nenhuma tarefa para mostrar</strong><p>Adicione tarefas para montar a timeline.</p></div>}
               </>;
             })()}
