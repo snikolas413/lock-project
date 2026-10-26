@@ -488,6 +488,7 @@ function App() {
             <p className="muted">Gerencie o papel de cada pessoa nos times. Convites por e-mail serão adicionados em uma próxima etapa.</p>
             {workspaces.map(workspace => {
               const members = teamMembers.filter(member => member.workspace_id === workspace.id);
+              const canManageMembers = members.some(member => member.user_id === session?.user.id && ['owner', 'admin'].includes(member.role));
               return <section className="member-workspace" key={workspace.id}>
                 <h4>{workspace.name}</h4>
                 {members.length ? members.map(member => {
@@ -496,8 +497,8 @@ function App() {
                   const isLastOwner = member.role === 'owner' && members.filter(item => item.role === 'owner').length <= 1;
                   return <div className="member-row" key={member.workspace_id + member.user_id}>
                     <div className="member-identity"><span className="assignee-avatar">{(profile?.display_name || member.user_id).slice(0,1).toUpperCase()}</span><div><strong>{profile?.display_name || (isSelf ? session?.user.email : null) || 'Membro da equipe'}{isSelf ? ' (você)' : ''}</strong><small>{member.user_id.slice(0,8)}…</small></div></div>
-                    <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}><option value="owner">Proprietário</option><option value="admin">Administrador</option><option value="member">Membro</option><option value="viewer">Visualizador</option></select>
-                    <button type="button" className="text-button danger-text" disabled={busy || isSelf || isLastOwner} onClick={() => void removeMember(member)}>Remover</button>
+                    <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || !canManageMembers || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}><option value="owner">Proprietário</option><option value="admin">Administrador</option><option value="member">Membro</option><option value="viewer">Visualizador</option></select>
+                    <button type="button" className="text-button danger-text" disabled={busy || !canManageMembers || isSelf || isLastOwner} onClick={() => void removeMember(member)}>Remover</button>
                   </div>;
                 }) : <p className="muted">Nenhum membro encontrado neste time.</p>}
               </section>;
