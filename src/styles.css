@@ -404,3 +404,12 @@
 .project-workspace-heading{margin-bottom:10px}
 @media(max-width:900px){.project-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.project-section-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.project-section-nav button{justify-content:center;padding:10px 6px}.project-summary-grid{grid-template-columns:1fr}.project-summary-wide{grid-column:auto}.project-upcoming-row{grid-template-columns:minmax(0,1fr) auto}.project-upcoming-row .priority{display:none}}
+
+
+.project-phase-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px);gap:20px;align-items:center;padding:14px 0;border-top:1px solid var(--border,#e7e9e5)}
+.project-phase-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.project-phase-copy strong{font-size:14px;overflow-wrap:anywhere}
+.project-phase-copy small,.project-phase-progress small{font-size:12px;color:var(--muted,#747b72)}
+.project-phase-progress{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:10px;align-items:center}
+.project-phase-progress .progress-track{margin:0}
+@media(max-width:640px){.project-phase-row{grid-template-columns:1fr;gap:10px}.project-phase-progress{grid-template-columns:minmax(0,1fr) 38px}}
