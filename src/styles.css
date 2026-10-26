@@ -359,3 +359,13 @@
 
 /* Planejador de cronograma na Lista */
 .schedule-builder{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:14px 0;padding:16px;border:1px solid #c6f08b40;border-radius:12px;background:#c6f08b08}.schedule-builder>div{flex:1;min-width:220px}.schedule-builder strong{font-size:13px}.schedule-builder p{margin:5px 0 0;color:#9ca7b5;font-size:11px}.schedule-builder label,.list-planning-controls label{display:grid;gap:5px;color:#9ca7b5;font-size:10px}.schedule-builder input,.list-planning-controls input,.list-planning-controls select{max-width:180px;min-width:100px;padding:7px;border:1px solid #ffffff20;border-radius:7px;background:#111720;color:#e8edf3;font:inherit}.list-planning-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px solid #ffffff12}.list-planning-controls label{font-size:9px}.list-planning-controls input{width:100px}.list-planning-controls select{max-width:210px}.list-dependency-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #c6f08b35;border-radius:20px;color:#c6f08b;font-size:10px}.list-dependency-chip button{border:0;background:transparent;color:inherit;cursor:pointer}
+
+/* Lista: controles do cronograma alinhados na própria linha da tarefa */
+.task-table-head.list-planning-head,.task-table-row.list-planning-row{grid-template-columns:minmax(180px,2fr) 58px minmax(150px,1.35fr) 135px 135px 105px 125px 95px 105px 110px 115px;min-width:1420px;gap:8px}
+.list-planning-row{align-items:center}
+.list-inline-date{width:100%;min-width:0;padding:7px 5px;border:1px solid #ffffff1a;border-radius:7px;background:#0c1016;color:#e8edf3;font:inherit;font-size:10px;color-scheme:dark}
+.list-inline-duration{width:58px;min-width:0;padding:7px 5px;border:1px solid #ffffff1a;border-radius:7px;background:#0c1016;color:#e8edf3;font:inherit;font-size:10px}
+.list-inline-dependency{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0}
+.list-inline-dependency select{width:100%;min-width:0;padding:7px 4px!important;font-size:10px!important}
+.list-inline-dependency .list-dependency-chip{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:3px 5px;font-size:9px}
+.list-inline-dependency .list-dependency-chip button{flex-shrink:0}
