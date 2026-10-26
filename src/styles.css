@@ -192,3 +192,18 @@
 .roadmap-gantt-ruler{background:#121923;border-bottom:1px solid #ffffff15}.roadmap-gantt-ruler>div:first-child{display:flex;align-items:center;padding:12px 14px;border-right:1px solid #ffffff10;color:#aab4c0;font-size:10px;font-weight:700}
 .roadmap-line{min-height:51px;border-bottom:1px solid #ffffff09}.roadmap-line-label{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 12px;border-right:1px solid #ffffff0c}.roadmap-line-label .hierarchy-type{flex-shrink:0;font-size:8px;padding:3px 5px}.roadmap-line-label button{min-width:0;flex:1;padding:0;border:0;background:none;color:#e1e7ee;text-align:left;font:inherit;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}.roadmap-line-label button:hover{color:#c6f08b}.roadmap-line-label small{flex-shrink:0;color:#8995a3;font-size:9px;white-space:nowrap}.roadmap-line-track{min-height:50px}.roadmap-bar{height:15px;border-radius:5px;cursor:default}.roadmap-bar-todo{background:#64b8f3}.roadmap-bar-in_progress{background:#39c9a2}.roadmap-bar-in_review{background:#c09af5}.roadmap-bar-done{background:#64ce91}.roadmap-bar-cancelled{background:#e58b86}.roadmap-bar-backlog{background:#748395}
 @media(max-width:650px){.gantt-toolbar{align-items:flex-start;flex-direction:column}.gantt-undated-row{grid-template-columns:8px minmax(0,1fr)}.gantt-undated-row small,.gantt-undated-row button{grid-column:2;justify-self:start}.roadmap-line-label{gap:5px;padding:7px}.roadmap-line-label small{display:none}}
+
+
+/* Product-first authentication: remove the marketing/landing split and use a focused app login */
+.auth-layout{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 180px);padding:36px 20px;background:radial-gradient(ellipse at 50% 0%,#c6f08b0b,transparent 55%)}
+.auth-intro{display:none}
+.auth-card{width:min(100%,440px);padding:34px 36px;border:1px solid #ffffff14;border-radius:18px;background:linear-gradient(155deg,#121820f5,#0d1118f5);box-shadow:0 28px 90px #0007}
+.auth-card:before{content:"LOCK PROJECT";display:block;margin-bottom:27px;color:#c6f08b;font-size:11px;font-weight:800;letter-spacing:.2em}
+.auth-tabs{border:1px solid #ffffff0b}
+.auth-card h2{margin-top:25px;font-size:25px;letter-spacing:-.6px}
+.auth-card .muted{font-size:12px}
+.auth-form{gap:18px;margin-top:28px}
+.field label{font-size:11px}
+.field input{min-height:44px;font-size:13px;border-radius:9px}
+.auth-foot{margin-top:22px}
+@media(max-width:600px){.auth-layout{min-height:calc(100vh - 110px);padding:18px 10px}.auth-card{padding:28px 22px;border-radius:15px}}
