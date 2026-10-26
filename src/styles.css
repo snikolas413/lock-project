@@ -369,3 +369,7 @@
 .list-inline-dependency select{width:100%;min-width:0;padding:7px 4px!important;font-size:10px!important}
 .list-inline-dependency .list-dependency-chip{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:3px 5px;font-size:9px}
 .list-inline-dependency .list-dependency-chip button{flex-shrink:0}
+
+/* Dedicated administration screen: keep operational views out of the admin workspace. */
+.page-admin>.dashboard-heading,.page-admin>.stats-grid,.page-admin>.dashboard-columns,.page-admin>.task-management{display:none!important}
+.page-admin .workspace-management{margin-top:0}
