@@ -340,10 +340,10 @@ function App() {
       {!ready ? <div className="loading">Preparando seu espaço…</div> : session ? <div className="dashboard dashboard-home">
         <div className="dashboard-heading"><div><p className="eyebrow"><span className="eyebrow-dot"/> VISÃO GERAL</p><h1>Bom te ver, {session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'por aí'}.</h1><p className="muted">Aqui está um panorama do que está acontecendo nos seus espaços.</p></div><span className="avatar">{(session.user.email?.[0] ?? 'L').toUpperCase()}</span></div>
         <div className="stats-grid">
-          <article className="stat-card"><span className="stat-icon">▦</span><span className="stat-label">Workspaces</span><strong>{workspaces.length}</strong><small>Seus espaços de trabalho</small></article>
-          <article className="stat-card"><span className="stat-icon">◇</span><span className="stat-label">Projetos</span><strong>{projects.length}</strong><small>Iniciativas organizadas</small></article>
-          <article className="stat-card"><span className="stat-icon">◷</span><span className="stat-label">Tarefas abertas</span><strong>{issues.filter(i => !['done','completed','closed','concluido','concluído'].includes(i.status.toLowerCase())).length}</strong><small>Precisam de atenção</small></article>
-          <article className="stat-card"><span className="stat-icon">✓</span><span className="stat-label">Concluídas</span><strong>{issues.filter(i => ['done','completed','closed','concluido','concluído'].includes(i.status.toLowerCase())).length}</strong><small>De {issues.length} tarefas</small></article>
+          <article className="stat-card"><span className="stat-icon">▦</span><span className="stat-label">Times</span><strong>{workspaces.length}</strong><small>Equipes cadastradas</small></article>
+          <article className="stat-card"><span className="stat-icon">◇</span><span className="stat-label">Clientes</span><strong>{clients.length}</strong><small>Contas atendidas pelos times</small></article>
+          <article className="stat-card"><span className="stat-icon">◷</span><span className="stat-label">Projetos</span><strong>{projects.length}</strong><small>Projetos dentro dos clientes</small></article>
+          <article className="stat-card"><span className="stat-icon">✓</span><span className="stat-label">Tarefas abertas</span><strong>{issues.filter(i => !['done','completed','closed','concluido','concluído'].includes(i.status.toLowerCase())).length}</strong><small>Precisam de atenção</small></article>
         </div>
         <div className="dashboard-columns">
           <section className="dashboard-section"><div className="section-title"><div><p className="eyebrow">SEUS PROJETOS</p><h2>Projetos recentes</h2></div><span className="count">{projects.length}</span></div>
