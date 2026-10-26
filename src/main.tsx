@@ -258,6 +258,7 @@ function App() {
 
   function startEditingIssue(issue: Issue) {
     setEditingIssueId(issue.id);
+    setQuickCreateOpen(true);
     setTaskTitle(issue.title);
     setTaskDescription(issue.description ?? '');
     setTaskType(issue.type ?? 'task');
@@ -412,7 +413,7 @@ function App() {
         <section className="task-management" id="task-management">
           <div className="section-title task-management-heading"><div><p className="eyebrow">{activeProjectId ? 'EXECUÇÃO DO PROJETO' : 'EXECUÇÃO'}</p><h2>{activeProjectId ? 'Tarefas do projeto' : 'Gerenciar tarefas'}</h2></div><div className="task-heading-actions"><span className="count">{activeProjectId ? filteredIssues.length : issues.length} tarefas</span>{activeProjectId && <button type="button" className="button button-primary" onClick={() => { setEditingIssueId(null); setTaskProject(activeProjectId); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskStatus('backlog'); setTaskPriority('medium'); setTaskDueDate(''); setTaskAssignee(''); setQuickCreateOpen(value => !value); }}>＋ Nova tarefa</button>}</div></div>
           {(!activeProjectId || quickCreateOpen || editingIssueId) && <form id="task-form" className={'task-form '+(activeProjectId?'task-quick-create':'')} onSubmit={saveIssue}>
-            <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
+            <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setQuickCreateOpen(false); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
             <div className="task-form-grid">
               <div className="field task-title-field"><label htmlFor="task-title">Título da tarefa</label><input id="task-title" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Ex.: Revisar fluxo de cadastro" maxLength={240} required /></div>
               <div className="field"><label htmlFor="task-type">Tipo de item</label><select id="task-type" value={taskType} onChange={e => { setTaskType(e.target.value); setTaskParentIssue(''); }}><option value="epic">Épico</option><option value="story">História</option><option value="task">Tarefa</option><option value="bug">Bug</option><option value="subtask">Subtarefa</option></select></div>
