@@ -7,7 +7,7 @@ import './styles.css';
 type Workspace = { id: string; name: string; slug: string; created_at: string };
 type Client = { id: string; workspace_id: string; name: string; slug: string; description: string | null; status: string; created_at: string };
 type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; client_id: string; updated_at: string };
-type Issue = { id: string; title: string; description: string | null; issue_number: number; type: string; parent_issue_id: string | null; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; start_date: string | null; end_date: string | null; assignee_id: string | null };
+type Issue = { id: string; title: string; description: string | null; issue_number: number; type: string; parent_issue_id: string | null; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; start_date: string | null; end_date: string | null; duration_days: number | null; assignee_id: string | null };
 type TeamMember = { workspace_id: string; user_id: string; role: string };
 type Profile = { id: string; display_name: string | null };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
@@ -52,6 +52,7 @@ function App() {
   const [taskStartDate, setTaskStartDate] = useState('');
   const [taskEndDate, setTaskEndDate] = useState('');
   const [timelineScale, setTimelineScale] = useState<'week' | 'month'>('week');
+  const [scheduleStartDate, setScheduleStartDate] = useState(new Date().toISOString().slice(0,10));
   const [taskAssignee, setTaskAssignee] = useState('');
   const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
@@ -118,7 +119,7 @@ function App() {
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
     if (!nextProjects.length) { setIssues([]); setLabels([]); setIssueLabels([]); setIssueDependencies([]); return; }
-    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,type,parent_issue_id,status,priority,updated_at,project_id,due_date,start_date,end_date,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
+    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,type,parent_issue_id,status,priority,updated_at,project_id,due_date,start_date,end_date,duration_days,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else {
       const nextIssues = (issueData ?? []) as Issue[];
@@ -255,6 +256,7 @@ function App() {
       due_date: taskDueDate || taskEndDate || null,
       start_date: taskStartDate || null,
       end_date: taskEndDate || taskDueDate || null,
+      duration_days: 1,
       assignee_id: taskAssignee || null,
     };
     const result = editingIssueId
@@ -357,6 +359,31 @@ function App() {
     if (error) setError(error.message);
     else { setMessage('Dependência removida.'); await loadWorkspaces(); }
     setBusy(false);
+  }
+
+  async function saveIssueDuration(issue: Issue, durationDays: number) {
+    const duration_days = Math.max(1, Math.min(365, Math.floor(durationDays || 1)));
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await (supabase as any).from('issues').update({ duration_days }).eq('id', issue.id);
+    if (error) setError(error.message); else { setMessage('Duração atualizada.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+  async function generateSchedule() {
+    const plan = filteredIssues.slice();
+    if (!plan.length) { setError('Não há tarefas visíveis para planejar.'); return; }
+    const ids = new Set(plan.map(issue => issue.id));
+    const deps = issueDependencies.filter(dep => ids.has(dep.predecessor_id) && ids.has(dep.successor_id));
+    const indegree = new Map(plan.map(issue => [issue.id, 0])); const outgoing = new Map<string, string[]>();
+    deps.forEach(dep => { indegree.set(dep.successor_id, (indegree.get(dep.successor_id) || 0) + 1); outgoing.set(dep.predecessor_id, [...(outgoing.get(dep.predecessor_id) || []), dep.successor_id]); });
+    const queue = plan.filter(issue => indegree.get(issue.id) === 0).map(issue => issue.id); const order: string[] = [];
+    while (queue.length) { const id = queue.shift()!; order.push(id); for (const next of outgoing.get(id) || []) { indegree.set(next, (indegree.get(next) || 0) - 1); if (indegree.get(next) === 0) queue.push(next); } }
+    if (order.length !== plan.length) { setError('Cronograma não gerado: confira as dependências, pode haver um ciclo.'); return; }
+    const starts = new Map<string,string>(), ends = new Map<string,string>();
+    const addDays = (date:string, days:number) => { const d = new Date(date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10); };
+    for (const id of order) { const issue = plan.find(item=>item.id===id)!; const preds = deps.filter(dep=>dep.successor_id===id).map(dep=>dep.predecessor_id); const start = preds.reduce((latest,pred)=>ends.get(pred)!>latest?ends.get(pred)!:latest,scheduleStartDate); starts.set(id,start); ends.set(id,addDays(start,Math.max(1,Math.min(365,issue.duration_days||1))-1)); }
+    setBusy(true); setError(''); setMessage('');
+    for (const id of order) { const start_date=starts.get(id)!, end_date=ends.get(id)!; const {error}=await supabase.from('issues').update({start_date,end_date,due_date:end_date}).eq('id',id); if(error){setError('Falha ao salvar cronograma: '+error.message);setBusy(false);return;} }
+    setMessage('Cronograma salvo. As durações foram calculadas em dias corridos.'); await loadWorkspaces(); setTaskView('timeline'); setBusy(false);
   }
 
   async function saveTimelineDates(issue: Issue, startDate: string, endDate: string) {
@@ -637,10 +664,10 @@ function App() {
               };
               return hierarchyItems.length ? hierarchyItems.map(issue => renderHierarchyItem(issue)) : <div className="empty-state compact-empty"><strong>Nenhum item nessa combinação de filtros</strong><p>Limpe os filtros para ver a hierarquia completa.</p></div>;
             })()}
-          </div> : <div className="task-table">
+          </div> : <>{taskView === 'list' && <div className="schedule-builder"><div><strong>Planejador de cronograma</strong><p>Defina duração e predecessoras para preencher automaticamente início e término.</p></div><label>Data inicial<input type="date" value={scheduleStartDate} onChange={event=>setScheduleStartDate(event.target.value)} disabled={busy}/></label><button type="button" className="button button-primary" disabled={busy || !filteredIssues.length} onClick={()=>void generateSchedule()}>{busy?'Calculando…':'Gerar cronograma ↗'}</button></div>}<div className="task-table">
             <div className="task-table-head"><span>Tarefa</span><span>Status</span><span>Responsável</span><span>Prioridade</span><span>Prazo</span><span>Etiquetas</span><span>Ações</span></div>
             {filteredIssues.length ? filteredIssues.map(issue => <article className="task-table-row" key={issue.id}>
-              <div className="task-name"><strong>{issue.title}</strong><small><span className="issue-type-tag">{({ epic: 'ÉPICO', story: 'HISTÓRIA', task: 'TAREFA', bug: 'BUG', subtask: 'SUBTAREFA' } as Record<string, string>)[issue.type] ?? 'TAREFA'}</span> · {projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}{issue.parent_issue_id ? ` · Pai: ${issues.find(parent => parent.id === issue.parent_issue_id)?.title ?? 'item vinculado'}` : ''}{issue.description ? ` · ${issue.description}` : ''}</small></div>
+              <div className="task-name"><strong>{issue.title}</strong><small><span className="issue-type-tag">{({ epic: 'ÉPICO', story: 'HISTÓRIA', task: 'TAREFA', bug: 'BUG', subtask: 'SUBTAREFA' } as Record<string, string>)[issue.type] ?? 'TAREFA'}</span> · {projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}{issue.parent_issue_id ? ` · Pai: ${issues.find(parent => parent.id === issue.parent_issue_id)?.title ?? 'item vinculado'}` : ''}{issue.description ? ` · ${issue.description}` : ''}</small><div className="list-planning-controls"><label>Duração (dias)<input type="number" min="1" max="365" value={issue.duration_days || 1} disabled={busy} onChange={event=>{const value=Number(event.target.value);setIssues(current=>current.map(item=>item.id===issue.id?{...item,duration_days:value}:item));}} onBlur={event=>void saveIssueDuration(issue,Number(event.target.value))}/></label><label>Depende de<select value={dependencyDrafts[issue.id] || ''} disabled={busy} onChange={event=>setDependencyDrafts(current=>({...current,[issue.id]:event.target.value}))}><option value="">Escolher predecessora…</option>{issues.filter(candidate=>candidate.id!==issue.id&&candidate.project_id===issue.project_id&&!issueDependencies.some(dep=>dep.predecessor_id===candidate.id&&dep.successor_id===issue.id)).map(candidate=><option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}</select></label><button type="button" className="text-button" disabled={busy||!dependencyDrafts[issue.id]} onClick={()=>void addIssueDependency(issue)}>Vincular</button>{issueDependencies.filter(dep=>dep.successor_id===issue.id).map(dep=><span className="list-dependency-chip" key={dep.id}>{issues.find(item=>item.id===dep.predecessor_id)?.title || 'Predecessora'} <button type="button" onClick={()=>void removeIssueDependency(dep)}>×</button></span>)}</div></div>
               <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={e => void moveIssueToStatus(issue, e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
               <select aria-label={`Responsável por ${issue.title}`} value={issue.assignee_id ?? ''} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ assignee_id: e.target.value || null }).eq('id', issue.id); if (error) setError(error.message); else { setMessage('Responsável atualizado.'); await loadWorkspaces(); } setBusy(false); }}><option value="">Sem responsável</option>{teamMembers.filter(member => member.workspace_id === projects.find(p => p.id === issue.project_id)?.workspace_id).map(member => <option key={member.user_id} value={member.user_id}>{profiles.find(profile => profile.id === member.user_id)?.display_name || `Membro ${member.user_id.slice(0, 8)}`}</option>)}</select>
               <select aria-label={`Prioridade de ${issue.title}`} value={issue.priority} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ priority: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select>
@@ -648,7 +675,7 @@ function App() {
               <div className="issue-labels task-row-labels">{labels.filter(label => label.project_id === issue.project_id && issueLabels.some(link => link.issue_id === issue.id && link.label_id === label.id)).map(label => <span className="issue-label-toggle selected" key={label.id} style={{color: label.color, borderColor: label.color}}>{label.name}</span>)}</div>
               <div className="task-actions"><button type="button" className="text-button" onClick={() => setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={() => startEditingIssue(issue)}>Editar</button><button type="button" className="text-button danger-text" disabled={busy} onClick={() => void deleteIssue(issue)}>Excluir</button></div>
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
-          </div>}
+          </div></>}
         </section>
         <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card workspace-card-clickable" key={w.id} role="button" tabIndex={0} onClick={()=>{setSelectedWorkspace(w.id);setTeamClientsWorkspace(w.id);}} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedWorkspace(w.id);document.getElementById('client-management')?.scrollIntoView({behavior:'smooth',block:'start'});}}}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{clients.filter(c=>c.workspace_id===w.id).length} clientes · {projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
