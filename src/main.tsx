@@ -167,6 +167,39 @@ function App() {
     finally { setBusy(false); }
   }
 
+  async function updateMemberRole(member: TeamMember, role: string) {
+    if (!['owner', 'admin', 'member', 'viewer'].includes(role) || member.role === role) return;
+    const owners = teamMembers.filter(item => item.workspace_id === member.workspace_id && item.role === 'owner');
+    if (member.role === 'owner' && role !== 'owner' && owners.length <= 1) {
+      setError('O time precisa manter pelo menos um proprietário.');
+      return;
+    }
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await supabase.from('workspace_members').update({ role }).eq('workspace_id', member.workspace_id).eq('user_id', member.user_id);
+    if (error) setError(error.message);
+    else { setMessage('Permissão do membro atualizada.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
+  async function removeMember(member: TeamMember) {
+    if (member.user_id === session?.user.id) {
+      setError('Para evitar bloquear o acesso ao time, não é possível remover sua própria conta por aqui.');
+      return;
+    }
+    const owners = teamMembers.filter(item => item.workspace_id === member.workspace_id && item.role === 'owner');
+    if (member.role === 'owner' && owners.length <= 1) {
+      setError('O time precisa manter pelo menos um proprietário.');
+      return;
+    }
+    const displayName = profiles.find(profile => profile.id === member.user_id)?.display_name || member.user_id.slice(0, 8);
+    if (!window.confirm(`Remover ${displayName} deste time? A pessoa perderá acesso aos projetos deste workspace.`)) return;
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await supabase.from('workspace_members').delete().eq('workspace_id', member.workspace_id).eq('user_id', member.user_id);
+    if (error) setError(error.message);
+    else { setMessage('Membro removido do time.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
   async function createWorkspace(event: FormEvent) {
     event.preventDefault(); if (!session?.user) return;
     const name = workspaceName.trim(); if (!name) return;
@@ -450,6 +483,26 @@ function App() {
         </section>
         <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card" key={w.id}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{clients.filter(c=>c.workspace_id===w.id).length} clientes · {projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
+          <div className="member-management">
+            <div className="section-title"><div><p className="eyebrow">ACESSOS</p><h3>Membros e permissões</h3></div><span className="count">{teamMembers.length} vínculos</span></div>
+            <p className="muted">Gerencie o papel de cada pessoa nos times. Convites por e-mail serão adicionados em uma próxima etapa.</p>
+            {workspaces.map(workspace => {
+              const members = teamMembers.filter(member => member.workspace_id === workspace.id);
+              return <section className="member-workspace" key={workspace.id}>
+                <h4>{workspace.name}</h4>
+                {members.length ? members.map(member => {
+                  const profile = profiles.find(item => item.id === member.user_id);
+                  const isSelf = member.user_id === session?.user.id;
+                  const isLastOwner = member.role === 'owner' && members.filter(item => item.role === 'owner').length <= 1;
+                  return <div className="member-row" key={member.workspace_id + member.user_id}>
+                    <div className="member-identity"><span className="assignee-avatar">{(profile?.display_name || member.user_id).slice(0,1).toUpperCase()}</span><div><strong>{profile?.display_name || (isSelf ? session?.user.email : null) || 'Membro da equipe'}{isSelf ? ' (você)' : ''}</strong><small>{member.user_id.slice(0,8)}…</small></div></div>
+                    <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}><option value="owner">Proprietário</option><option value="admin">Administrador</option><option value="member">Membro</option><option value="viewer">Visualizador</option></select>
+                    <button type="button" className="text-button danger-text" disabled={busy || isSelf || isLastOwner} onClick={() => void removeMember(member)}>Remover</button>
+                  </div>;
+                }) : <p className="muted">Nenhum membro encontrado neste time.</p>}
+              </section>;
+            })}
+          </div>
           <form className="workspace-form" onSubmit={createWorkspace}><label htmlFor="workspace-name">Criar time</label><div className="form-row"><input id="workspace-name" value={workspaceName} onChange={e=>setWorkspaceName(e.target.value)} placeholder="Ex.: Time de Produto, Atendimento, Design" maxLength={120} required/><button className="button button-primary" disabled={busy}>{busy?'Criando…':'Criar time'} ↗</button></div></form>
         </section>
         {selectedIssue && <div className="issue-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setSelectedIssue(null); }}>
