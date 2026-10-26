@@ -13,6 +13,7 @@ type Profile = { id: string; display_name: string | null };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
 type Label = { id: string; project_id: string; name: string; color: string; created_at: string };
 type IssueLabel = { issue_id: string; label_id: string };
+type IssueDependency = { id: string; predecessor_id: string; successor_id: string; created_at: string };
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -65,6 +66,8 @@ function App() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
   const [issueLabels, setIssueLabels] = useState<IssueLabel[]>([]);
+  const [issueDependencies, setIssueDependencies] = useState<IssueDependency[]>([]);
+  const [dependencyDrafts, setDependencyDrafts] = useState<Record<string, string>>({});
   const [issueLabelFilter, setIssueLabelFilter] = useState('all');
   const [labelName, setLabelName] = useState('');
   const [labelColor, setLabelColor] = useState('#c6f08b');
@@ -84,7 +87,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) { setWorkspaces([]); setClients([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
+    if (!session) { setWorkspaces([]); setClients([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); setIssueDependencies([]); return; }
     void loadWorkspaces();
   }, [session]);
 
@@ -114,7 +117,7 @@ function App() {
     if (projectError) { setError(projectError.message); return; }
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
-    if (!nextProjects.length) { setIssues([]); setLabels([]); setIssueLabels([]); return; }
+    if (!nextProjects.length) { setIssues([]); setLabels([]); setIssueLabels([]); setIssueDependencies([]); return; }
     const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,type,parent_issue_id,status,priority,updated_at,project_id,due_date,start_date,end_date,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else {
@@ -126,6 +129,9 @@ function App() {
         else setIssueLabels((relationData ?? []) as IssueLabel[]);
       } else setIssueLabels([]);
     }
+    const { data: dependencyData, error: dependencyError } = await (supabase as any).from('issue_dependencies').select('id,predecessor_id,successor_id,created_at');
+    if (dependencyError) setError(dependencyError.message);
+    else setIssueDependencies((dependencyData ?? []) as IssueDependency[]);
     const { data: labelData, error: labelError } = await supabase.from('labels').select('id,project_id,name,color,created_at').in('project_id', nextProjects.map(p => p.id)).order('name');
     if (labelError) setError(labelError.message);
     else setLabels((labelData ?? []) as Label[]);
@@ -329,6 +335,27 @@ function App() {
     const { error } = await supabase.from('issues').update({ status }).eq('id', issue.id);
     if (error) setError(error.message);
     else { setMessage('Tarefa movida no quadro.'); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
+  async function addIssueDependency(successor: Issue) {
+    const predecessorId = dependencyDrafts[successor.id];
+    if (!predecessorId || predecessorId === successor.id) return;
+    if (issueDependencies.some(dep => dep.predecessor_id === predecessorId && dep.successor_id === successor.id)) {
+      setError('Essa dependência já existe.'); return;
+    }
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await (supabase as any).from('issue_dependencies').insert({ predecessor_id: predecessorId, successor_id: successor.id });
+    if (error) setError(error.message);
+    else { setMessage('Dependência adicionada.'); setDependencyDrafts(current => ({ ...current, [successor.id]: '' })); await loadWorkspaces(); }
+    setBusy(false);
+  }
+
+  async function removeIssueDependency(dependency: IssueDependency) {
+    setBusy(true); setError(''); setMessage('');
+    const { error } = await (supabase as any).from('issue_dependencies').delete().eq('id', dependency.id);
+    if (error) setError(error.message);
+    else { setMessage('Dependência removida.'); await loadWorkspaces(); }
     setBusy(false);
   }
 
@@ -545,7 +572,7 @@ function App() {
                     const assigned = profiles.find(profile=>profile.id===issue.assignee_id)?.display_name || (issue.assignee_id ? 'Membro atribuído' : 'Sem responsável');
                     const project = projects.find(p=>p.id===issue.project_id);
                     return <article className={'gantt-row'+(overdue?' gantt-row-overdue':'')} key={issue.id}>
-                      <div className="gantt-task-label"><strong>{issue.title}</strong><small>{project?.key ?? 'TASK'}-{issue.issue_number} · {startDate===endDate?'Marco':new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(dateAt(startDate))+' – '+new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(dateAt(endDate))} · {assigned}</small><div className="gantt-row-actions"><label>Início<input aria-label={'Data de início de '+issue.title} type="date" value={issue.start_date || ''} max={issue.end_date || issue.due_date || undefined} onChange={event=>void saveTimelineDates(issue,event.target.value,issue.end_date || issue.due_date || '')} disabled={busy}/></label><label>Término<input aria-label={'Data de término de '+issue.title} type="date" value={issue.end_date || issue.due_date || ''} min={issue.start_date || undefined} onChange={event=>void saveTimelineDates(issue,issue.start_date || '',event.target.value)} disabled={busy}/></label></div></div>
+                      <div className="gantt-task-label"><strong>{issue.title}</strong><small>{project?.key ?? 'TASK'}-{issue.issue_number} · {startDate===endDate?'Marco':new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(dateAt(startDate))+' – '+new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(dateAt(endDate))} · {assigned}</small>{(() => { const predecessors = issueDependencies.filter(dep => dep.successor_id === issue.id); const successors = issueDependencies.filter(dep => dep.predecessor_id === issue.id); const blocked = predecessors.some(dep => { const predecessor = issues.find(item => item.id === dep.predecessor_id); return predecessor && predecessor.status !== 'done' && predecessor.status !== 'cancelled'; }); return <div className={'gantt-dependencies'+(blocked?' is-blocked':'')}><strong>{blocked ? '⛔ Bloqueada' : '↔ Dependências'}</strong>{predecessors.map(dep => { const predecessor = issues.find(item => item.id === dep.predecessor_id); return <span className="gantt-dependency-chip" key={dep.id}>Depende de: {predecessor?.title || 'Tarefa'} <button type="button" aria-label="Remover dependência" disabled={busy} onClick={() => void removeIssueDependency(dep)}>×</button></span>; })}{successors.map(dep => { const successor = issues.find(item => item.id === dep.successor_id); return <span className="gantt-dependency-chip" key={dep.id}>Desbloqueia: {successor?.title || 'Tarefa'}</span>; })}<div className="gantt-dependency-add"><select aria-label={'Predecessora de '+issue.title} value={dependencyDrafts[issue.id] || ''} disabled={busy} onChange={event=>setDependencyDrafts(current=>({...current,[issue.id]:event.target.value}))}><option value="">Adicionar predecessora…</option>{issues.filter(candidate=>candidate.id!==issue.id&&candidate.project_id===issue.project_id&&!issueDependencies.some(dep=>dep.predecessor_id===candidate.id&&dep.successor_id===issue.id)).map(candidate=><option key={candidate.id} value={candidate.id}>{projects.find(p=>p.id===candidate.project_id)?.key}-{candidate.issue_number} · {candidate.title}</option>)}</select><button type="button" disabled={busy||!dependencyDrafts[issue.id]} onClick={()=>void addIssueDependency(issue)}>Vincular</button></div></div>; })()}<div className="gantt-row-actions"><label>Início<input aria-label={'Data de início de '+issue.title} type="date" value={issue.start_date || ''} max={issue.end_date || issue.due_date || undefined} onChange={event=>void saveTimelineDates(issue,event.target.value,issue.end_date || issue.due_date || '')} disabled={busy}/></label><label>Término<input aria-label={'Data de término de '+issue.title} type="date" value={issue.end_date || issue.due_date || ''} min={issue.start_date || undefined} onChange={event=>void saveTimelineDates(issue,issue.start_date || '',event.target.value)} disabled={busy}/></label></div></div>
                       <div className="gantt-track"><span className="gantt-grid-line" style={{left:position(todayIso)+'%'}}/>{milestone?<button type="button" className={'gantt-milestone gantt-'+issue.status+(overdue?' overdue':'')} style={{left:startPos+'%'}} title={issue.title+' · marco '+endDate} onClick={()=>setSelectedIssue(issue)}/>:<button type="button" className={'gantt-bar gantt-'+issue.status+(overdue?' gantt-overdue':'')} style={{left:startPos+'%',width:width+'%'}} title={issue.title+' · '+startDate+' a '+endDate} onClick={()=>setSelectedIssue(issue)}><span>{issue.title}</span></button>}{issue.due_date && <span className="gantt-due-marker" style={{left:position(issue.due_date)+'%'}}/>}{overdue&&<span className="gantt-overdue-flag" style={{left:endPos+'%'}}>Atrasada</span>}</div>
                     </article>;
                   })}
