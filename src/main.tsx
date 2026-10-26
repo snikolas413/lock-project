@@ -61,6 +61,7 @@ function App() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [activePage, setActivePage] = useState<'overview' | 'projects' | 'tasks' | 'clients' | 'admin'>('overview');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -89,8 +90,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) { setWorkspaces([]); setClients([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); setIssueDependencies([]); return; }
-    void loadWorkspaces();
+    if (!session) { setWorkspaces([]); setClients([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); setIssueDependencies([]); setIsPlatformAdmin(false); return; }
+    void (async () => {
+      const { data, error } = await (supabase as any).rpc('is_platform_admin');
+      if (error) setError(error.message);
+      setIsPlatformAdmin(data === true);
+      await loadWorkspaces();
+    })();
   }, [session]);
 
   async function loadWorkspaces() {
@@ -185,7 +191,7 @@ function App() {
   }
 
   async function updateMemberRole(member: TeamMember, role: string) {
-    if (!['owner', 'admin', 'member', 'viewer'].includes(role) || member.role === role) return;
+    if (!['owner', 'admin', 'analyst', 'member', 'viewer'].includes(role) || member.role === role) return;
     const owners = teamMembers.filter(item => item.workspace_id === member.workspace_id && item.role === 'owner');
     if (member.role === 'owner' && role !== 'owner' && owners.length <= 1) {
       setError('O time precisa manter pelo menos um proprietário.');
@@ -470,8 +476,8 @@ function App() {
       <button className={activePage==='projects'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('projects');}}>◇ <span>Projetos</span><small>{projects.length}</small></button>
       <button className={activePage==='clients'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('clients');}}>◎ <span>Clientes</span><small>{clients.length}</small></button>
       <button className={activePage==='tasks'||activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{setActiveProjectId(null);setActivePage('tasks');setIssueProjectFilter('all');setIssueClientFilter('all');}}>☷ <span>Tarefas</span><small>{issues.length}</small></button>
-      <div className="sidebar-divider"/><div className="sidebar-group-label">ADMINISTRAÇÃO</div>
-      <button className={activePage==='admin'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('admin');}}>⚙ <span>Times e acessos</span></button>
+      {(isPlatformAdmin || workspaces.length === 0 || teamMembers.some(member => member.user_id === session.user.id && ['owner', 'admin'].includes(member.role))) && <><div className="sidebar-divider"/><div className="sidebar-group-label">ADMINISTRAÇÃO</div>
+      <button className={activePage==='admin'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('admin');}}>⚙ <span>Times e acessos</span></button></>}
       <div className="sidebar-divider"/><div className="sidebar-group-label">SEUS PROJETOS</div>
       {projects.slice(0,8).map(project=><button key={project.id} className={'sidebar-project '+(activeProjectId===project.id?'active':'')} onClick={()=>openProject(project.id)}><span>{project.key.slice(0,2)}</span><label>{project.name}</label></button>)}
       <div className="sidebar-bottom"><span className="sidebar-avatar">{(session.user.email?.[0]??'U').toUpperCase()}</span><div><strong>{session.user.user_metadata?.display_name||session.user.email?.split('@')[0]}</strong><small>{session.user.email}</small></div></div>
@@ -719,14 +725,14 @@ function App() {
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
           </div></>}
         </section>
-        {activePage === 'admin' && <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
+        {activePage === 'admin' && (isPlatformAdmin || workspaces.length === 0 || teamMembers.some(member => member.user_id === session.user.id && ['owner', 'admin'].includes(member.role))) && <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card workspace-card-clickable" key={w.id} role="button" tabIndex={0} onClick={()=>{setSelectedWorkspace(w.id);setTeamClientsWorkspace(w.id);}} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedWorkspace(w.id);document.getElementById('client-management')?.scrollIntoView({behavior:'smooth',block:'start'});}}}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{clients.filter(c=>c.workspace_id===w.id).length} clientes · {projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
           <div className="member-management">
             <div className="section-title"><div><p className="eyebrow">ACESSOS</p><h3>Membros e permissões</h3></div><span className="count">{teamMembers.length} vínculos</span></div>
-            <p className="muted">Gerencie o papel de cada pessoa nos times. Convites por e-mail serão adicionados em uma próxima etapa.</p>
+            <p className="muted">Proprietários administram os membros do próprio time. Analistas trabalham nos projetos e tarefas, sem alterar membros ou permissões. O convite por e-mail será implementado em uma próxima etapa.</p>
             {workspaces.map(workspace => {
               const members = teamMembers.filter(member => member.workspace_id === workspace.id);
-              const canManageMembers = members.some(member => member.user_id === session?.user.id && ['owner', 'admin'].includes(member.role));
+              const canManageMembers = isPlatformAdmin || members.some(member => member.user_id === session?.user.id && ['owner', 'admin'].includes(member.role));
               return <section className="member-workspace" key={workspace.id}>
                 <h4>{workspace.name}</h4>
                 {members.length ? members.map(member => {
@@ -735,7 +741,7 @@ function App() {
                   const isLastOwner = member.role === 'owner' && members.filter(item => item.role === 'owner').length <= 1;
                   return <div className="member-row" key={member.workspace_id + member.user_id}>
                     <div className="member-identity"><span className="assignee-avatar">{(profile?.display_name || member.user_id).slice(0,1).toUpperCase()}</span><div><strong>{profile?.display_name || (isSelf ? session?.user.email : null) || 'Membro da equipe'}{isSelf ? ' (você)' : ''}</strong><small>{member.user_id.slice(0,8)}…</small></div></div>
-                    <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || !canManageMembers || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}><option value="owner">Proprietário</option><option value="admin">Administrador</option><option value="member">Membro</option><option value="viewer">Visualizador</option></select>
+                    <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || !canManageMembers || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}><option value="owner">Proprietário do time</option><option value="analyst">Analista</option><option value="viewer">Visualizador</option>{isPlatformAdmin && <option value="admin">Administrador legado</option>}</select>
                     <button type="button" className="text-button danger-text" disabled={busy || !canManageMembers || isSelf || isLastOwner} onClick={() => void removeMember(member)}>Remover</button>
                   </div>;
                 }) : <p className="muted">Nenhum membro encontrado neste time.</p>}
