@@ -413,3 +413,7 @@
 .project-phase-progress{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:10px;align-items:center}
 .project-phase-progress .progress-track{margin:0}
 @media(max-width:640px){.project-phase-row{grid-template-columns:1fr;gap:10px}.project-phase-progress{grid-template-columns:minmax(0,1fr) 38px}}
+
+.gantt-dependencies.has-schedule-conflict{border-left:3px solid #d97706;padding-left:9px;background:color-mix(in srgb,#d97706 7%,transparent)}
+.gantt-schedule-warning{display:block;color:#b45309;font-size:11px;line-height:1.4;margin:3px 0}
+.gantt-dependencies.is-blocked.has-schedule-conflict{border-left-color:#dc2626}
