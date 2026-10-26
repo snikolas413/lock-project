@@ -389,6 +389,11 @@ function App() {
     const plan = filteredIssues.slice();
     if (!plan.length) { setError('Não há tarefas visíveis para planejar.'); return; }
     const ids = new Set(plan.map(issue => issue.id));
+    const hiddenPredecessors = issueDependencies.filter(dep => ids.has(dep.successor_id) && !ids.has(dep.predecessor_id));
+    if (hiddenPredecessors.length) {
+      setError('Cronograma não gerado: há predecessoras ocultas pelos filtros. Limpe a busca e os filtros para calcular a sequência completa.');
+      return;
+    }
     const deps = issueDependencies.filter(dep => ids.has(dep.predecessor_id) && ids.has(dep.successor_id));
     const indegree = new Map(plan.map(issue => [issue.id, 0])); const outgoing = new Map<string, string[]>();
     deps.forEach(dep => { indegree.set(dep.successor_id, (indegree.get(dep.successor_id) || 0) + 1); outgoing.set(dep.predecessor_id, [...(outgoing.get(dep.predecessor_id) || []), dep.successor_id]); });
