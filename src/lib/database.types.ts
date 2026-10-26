@@ -168,6 +168,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          start_date?: string | null
+          end_date?: string | null
           id?: string
           issue_number?: number
           position?: number
