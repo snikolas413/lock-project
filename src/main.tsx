@@ -59,7 +59,7 @@ function App() {
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
   const [teamClientsWorkspace, setTeamClientsWorkspace] = useState<string | null>(null);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  const [activePage, setActivePage] = useState<'overview' | 'projects' | 'tasks' | 'clients'>('overview');
+  const [activePage, setActivePage] = useState<'overview' | 'projects' | 'tasks' | 'clients' | 'admin'>('overview');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -470,6 +470,8 @@ function App() {
       <button className={activePage==='projects'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('projects');}}>◇ <span>Projetos</span><small>{projects.length}</small></button>
       <button className={activePage==='clients'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('clients');}}>◎ <span>Clientes</span><small>{clients.length}</small></button>
       <button className={activePage==='tasks'||activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{setActiveProjectId(null);setActivePage('tasks');setIssueProjectFilter('all');setIssueClientFilter('all');}}>☷ <span>Tarefas</span><small>{issues.length}</small></button>
+      <div className="sidebar-divider"/><div className="sidebar-group-label">ADMINISTRAÇÃO</div>
+      <button className={activePage==='admin'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('admin');}}>⚙ <span>Times e acessos</span></button>
       <div className="sidebar-divider"/><div className="sidebar-group-label">SEUS PROJETOS</div>
       {projects.slice(0,8).map(project=><button key={project.id} className={'sidebar-project '+(activeProjectId===project.id?'active':'')} onClick={()=>openProject(project.id)}><span>{project.key.slice(0,2)}</span><label>{project.name}</label></button>)}
       <div className="sidebar-bottom"><span className="sidebar-avatar">{(session.user.email?.[0]??'U').toUpperCase()}</span><div><strong>{session.user.user_metadata?.display_name||session.user.email?.split('@')[0]}</strong><small>{session.user.email}</small></div></div>
@@ -717,7 +719,7 @@ function App() {
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
           </div></>}
         </section>
-        <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
+        {activePage === 'admin' && <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card workspace-card-clickable" key={w.id} role="button" tabIndex={0} onClick={()=>{setSelectedWorkspace(w.id);setTeamClientsWorkspace(w.id);}} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedWorkspace(w.id);document.getElementById('client-management')?.scrollIntoView({behavior:'smooth',block:'start'});}}}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{clients.filter(c=>c.workspace_id===w.id).length} clientes · {projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
           <div className="member-management">
             <div className="section-title"><div><p className="eyebrow">ACESSOS</p><h3>Membros e permissões</h3></div><span className="count">{teamMembers.length} vínculos</span></div>
@@ -741,7 +743,7 @@ function App() {
             })}
           </div>
           <form className="workspace-form" onSubmit={createWorkspace}><label htmlFor="workspace-name">Criar time</label><div className="form-row"><input id="workspace-name" value={workspaceName} onChange={e=>setWorkspaceName(e.target.value)} placeholder="Ex.: Time de Produto, Atendimento, Design" maxLength={120} required/><button className="button button-primary" disabled={busy}>{busy?'Criando…':'Criar time'} ↗</button></div></form>
-        </section>
+        </section>}
         {teamClientsWorkspace && <div className="issue-modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setTeamClientsWorkspace(null);}}>
           <section className="team-clients-modal" role="dialog" aria-modal="true" aria-labelledby="team-clients-title">
             <header className="issue-modal-header"><div><p className="eyebrow">ESTRUTURA DO TIME</p><h2 id="team-clients-title">{workspaces.find(w=>w.id===teamClientsWorkspace)?.name ?? 'Time'}</h2><p className="muted">Clientes vinculados a este time e seus projetos.</p></div><button type="button" className="button button-quiet" onClick={()=>setTeamClientsWorkspace(null)}>Fechar ✕</button></header>
