@@ -155,3 +155,12 @@
 .team-client-detail-copy{display:grid;gap:6px;min-width:0;flex:1}.team-client-detail-copy>strong{font-size:13px}.team-client-detail-copy>small{font-size:10px;color:#8792a0}
 .team-client-projects{display:grid;gap:6px;margin-top:4px}.team-project-link{display:flex;align-items:center;gap:10px;text-align:left;padding:9px 10px;border:1px solid #ffffff10;border-radius:8px;background:#ffffff04;color:#dfe5ec;font-size:11px;cursor:pointer}.team-project-link:hover{border-color:#c6f08b60;background:#c6f08b08}.team-project-link span{color:#c6f08b;font-size:9px;font-weight:800;letter-spacing:.4px}
 @media(max-width:520px){.team-clients-modal{padding:15px}.team-client-detail{flex-wrap:wrap}.team-client-detail>.text-button{margin-left:44px}}
+
+
+.project-workspace-heading{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;margin:8px 0 22px;padding:20px;border:1px solid #ffffff16;border-radius:14px;background:linear-gradient(120deg,#c6f08b0d,#ffffff03)}
+.project-workspace-heading>div{min-width:0}.project-workspace-heading h2{margin:7px 0 5px;font-size:clamp(20px,3vw,28px);letter-spacing:-.7px}.project-workspace-heading .muted{margin:0;font-size:12px}.project-workspace-heading .eyebrow{font-size:9px}
+.project-workspace-heading>.count{white-space:nowrap}
+.task-view-switch{display:flex;flex-wrap:wrap;gap:7px;margin:18px 0}
+.task-view-switch button{border:1px solid #ffffff18;border-radius:8px;padding:10px 13px;background:#ffffff05;color:#aab3bf;font-size:12px;font-weight:650}
+.task-view-switch button.active{border-color:#c6f08b70;background:#c6f08b12;color:#d7f5b0}
+@media(max-width:650px){.project-workspace-heading{grid-template-columns:1fr auto;gap:12px;padding:15px}.project-workspace-heading>.button{grid-column:1/-1;justify-self:start}.project-workspace-heading>div{grid-column:1/-1;grid-row:2}.project-workspace-heading>.count{grid-column:2;grid-row:1}}
