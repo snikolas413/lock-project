@@ -470,12 +470,80 @@ function App() {
                 </div>
               </section>;
             })}
-          </div> : taskView === 'timeline' ? <div className="timeline-view">
-            {[...filteredIssues].sort((a,b)=>(a.due_date||'9999-12-31').localeCompare(b.due_date||'9999-12-31')).map(issue=><article className="timeline-item" key={issue.id}><div className="timeline-date">{issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : 'Sem prazo'}</div><div className="timeline-track"><span className={'timeline-node status-'+issue.status}></span><div className="timeline-card"><div><strong>{issue.title}</strong><small>{projects.find(p=>p.id===issue.project_id)?.key ?? 'TASK'}-{issue.issue_number} · {projects.find(p=>p.id===issue.project_id)?.name ?? 'Projeto'}</small></div><span className={'priority priority-'+issue.priority}>{({lowest:'Mínima',low:'Baixa',medium:'Média',high:'Alta',highest:'Urgente'} as Record<string,string>)[issue.priority] ?? issue.priority}</span><div className="task-actions"><button type="button" className="text-button" onClick={()=>setSelectedIssue(issue)}>Comentários</button><button type="button" className="text-button" onClick={()=>startEditingIssue(issue)}>Editar</button></div></div></div></article>)}
-            {!filteredIssues.length&&<div className="empty-state compact-empty"><strong>Nenhuma tarefa para mostrar</strong><p>Adicione tarefas e prazos para montar a timeline.</p></div>}
-          </div> : taskView === 'roadmap' ? <div className="roadmap-view">
-            {projects.filter(project=>issueProjectFilter==='all'||project.id===issueProjectFilter).filter(project=>issueClientFilter==='all'||project.client_id===issueClientFilter).map(project=><section className="roadmap-project" key={project.id}><header><div><span className="project-mark">{project.key.slice(0,2)}</span><div><strong>{project.name}</strong><small>{project.key} · {clients.find(c=>c.id===project.client_id)?.name ?? 'Sem cliente'}</small></div></div><span className="count">{issues.filter(i=>i.project_id===project.id).length} itens</span></header><div className="roadmap-milestones">{filteredIssues.filter(issue=>issue.project_id===project.id&&issue.type==='epic').map(epic=><article className="roadmap-epic" key={epic.id}><span className="roadmap-epic-tag">ÉPICO</span><strong>{epic.title}</strong><span className={'status-text-'+epic.status}>{({backlog:'Backlog',todo:'A fazer',in_progress:'Em andamento',in_review:'Em revisão',done:'Concluída',cancelled:'Cancelada'} as Record<string,string>)[epic.status] ?? epic.status}</span><div className="roadmap-children">{filteredIssues.filter(child=>child.parent_issue_id===epic.id).map(child=><div key={child.id}><span>{child.type.toUpperCase()}</span>{child.title}<small>{child.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(new Date(child.due_date+'T00:00:00Z')) : 'Sem prazo'}</small></div>)}</div></article>)}{!filteredIssues.some(issue=>issue.project_id===project.id&&issue.type==='epic')&&<p className="muted">Crie épicos para organizar os grandes marcos deste projeto.</p>}</div></section>)}
-            {!projects.length&&<div className="empty-state compact-empty"><strong>Sem projetos ainda</strong><p>Crie um projeto para começar o roadmap.</p></div>}
+          </div> : taskView === 'timeline' ? <div className="timeline-view gantt-view">
+            {(() => {
+              const dated = [...filteredIssues].filter(issue => issue.due_date).sort((a,b) => (a.due_date || '').localeCompare(b.due_date || ''));
+              const undated = filteredIssues.filter(issue => !issue.due_date);
+              const day = 86400000;
+              const today = new Date(); today.setHours(0,0,0,0);
+              const first = dated.length ? new Date(dated[0].due_date + 'T00:00:00Z') : new Date(today.getTime() - 14 * day);
+              const last = dated.length ? new Date(dated[dated.length - 1].due_date + 'T00:00:00Z') : new Date(today.getTime() + 30 * day);
+              const start = new Date(Math.min(first.getTime(), today.getTime()) - 7 * day);
+              const end = new Date(Math.max(last.getTime(), today.getTime()) + 14 * day);
+              const total = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / day));
+              const monthMarks: {label:string;left:number;width:number}[] = [];
+              let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+              while (cursor < end) {
+                const next = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+                const left = Math.max(0, (cursor.getTime()-start.getTime())/day/total*100);
+                const right = Math.min(100, (next.getTime()-start.getTime())/day/total*100);
+                monthMarks.push({label:new Intl.DateTimeFormat('pt-BR',{month:'short',year:'2-digit'}).format(cursor),left,width:Math.max(0,right-left)});
+                cursor = next;
+              }
+              const position = (date:string) => Math.max(0,Math.min(100,((new Date(date+'T00:00:00Z').getTime()-start.getTime())/day/total)*100));
+              return <>
+                <div className="gantt-toolbar"><div><strong>Planejamento por prazo</strong><span>{dated.length} com prazo · {undated.length} sem prazo</span></div><span className="gantt-legend"><i/> Prazo estimado</span></div>
+                <div className="gantt-scroll"><div className="gantt-canvas">
+                  <div className="gantt-ruler"><div className="gantt-task-label">Tarefa</div><div className="gantt-calendar">{monthMarks.map((month,index)=><span key={index} style={{left:month.left+'%',width:month.width+'%'}}>{month.label}</span>)}</div></div>
+                  {dated.map(issue => {
+                    const due = position(issue.due_date!);
+                    const left = Math.max(0,due-(7/total*100));
+                    const width = Math.max(1.4,due-left);
+                    return <article className="gantt-row" key={issue.id}>
+                      <div className="gantt-task-label"><strong>{issue.title}</strong><small>{projects.find(p=>p.id===issue.project_id)?.key ?? 'TASK'}-{issue.issue_number} · {issue.due_date ? new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')) : ''}</small></div>
+                      <div className="gantt-track"><span className="gantt-grid-line" style={{left:position(today.toISOString().slice(0,10))+'%'}}/><button type="button" className={'gantt-bar gantt-'+issue.status} style={{left:left+'%',width:width+'%'}} title={issue.title+' · prazo '+issue.due_date} onClick={()=>setSelectedIssue(issue)}><span>{issue.title}</span></button><span className="gantt-due-marker" style={{left:due+'%'}}/></div>
+                    </article>;
+                  })}
+                  {!dated.length && <div className="gantt-empty">Adicione prazos às tarefas para posicioná-las na linha do tempo.</div>}
+                </div></div>
+                {undated.length>0 && <section className="gantt-undated"><h4>Sem data definida <span>{undated.length}</span></h4>{undated.map(issue=><div className="gantt-undated-row" key={issue.id}><span className={'kanban-status-dot status-'+issue.status}/><strong>{issue.title}</strong><small>{projects.find(p=>p.id===issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}</small><button type="button" className="text-button" onClick={()=>startEditingIssue(issue)}>Definir prazo / editar</button></div>)}</section>}
+                {!filteredIssues.length && <div className="empty-state compact-empty"><strong>Nenhuma tarefa para mostrar</strong><p>Adicione tarefas para montar a timeline.</p></div>}
+              </>;
+            })()}
+          </div> : taskView === 'roadmap' ? <div className="roadmap-view roadmap-gantt-view">
+            {(() => {
+              const activeProjects = projects.filter(project => activeProjectId ? project.id === activeProjectId : (issueProjectFilter==='all'||project.id===issueProjectFilter) && (issueClientFilter==='all'||project.client_id===issueClientFilter));
+              const roadmapItems = filteredIssues.filter(issue => activeProjects.some(project=>project.id===issue.project_id));
+              const dated = roadmapItems.filter(issue=>issue.due_date).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''));
+              const day = 86400000;
+              const today = new Date(); today.setHours(0,0,0,0);
+              const first = dated.length ? new Date(dated[0].due_date+'T00:00:00Z') : new Date(today.getTime()-14*day);
+              const last = dated.length ? new Date(dated[dated.length-1].due_date+'T00:00:00Z') : new Date(today.getTime()+45*day);
+              const start = new Date(Math.min(first.getTime(),today.getTime())-7*day);
+              const end = new Date(Math.max(last.getTime(),today.getTime())+21*day);
+              const total = Math.max(1,Math.ceil((end.getTime()-start.getTime())/day));
+              const pos=(date:string)=>Math.max(0,Math.min(100,((new Date(date+'T00:00:00Z').getTime()-start.getTime())/day/total)*100));
+              const marks: {label:string;left:number;width:number}[]=[];
+              let cursor=new Date(start.getFullYear(),start.getMonth(),1);
+              while(cursor<end){const next=new Date(cursor.getFullYear(),cursor.getMonth()+1,1);const left=Math.max(0,(cursor.getTime()-start.getTime())/day/total*100);const right=Math.min(100,(next.getTime()-start.getTime())/day/total*100);marks.push({label:new Intl.DateTimeFormat('pt-BR',{month:'short',year:'numeric'}).format(cursor),left,width:Math.max(0,right-left)});cursor=next;}
+              const renderRoadmapRow=(issue:Issue,depth=0):React.ReactNode=>{
+                const due=issue.due_date?pos(issue.due_date):null;
+                const left=due===null?0:Math.max(0,due-(14/total*100));
+                const width=due===null?0:Math.max(1.5,due-left);
+                return <div className={'roadmap-line roadmap-line-'+issue.type} key={issue.id}>
+                  <div className="roadmap-line-label" style={{paddingLeft:(depth*18)+'px'}}><span className={'hierarchy-type hierarchy-type-'+issue.type}>{({epic:'ÉPICO',story:'HISTÓRIA',task:'TAREFA',bug:'BUG',subtask:'SUBTAREFA'} as Record<string,string>)[issue.type]??'TAREFA'}</span><button type="button" onClick={()=>setSelectedIssue(issue)}>{issue.title}</button><small>{issue.due_date?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'}).format(new Date(issue.due_date+'T00:00:00Z')):'Sem prazo'}</small></div>
+                  <div className="roadmap-line-track">{due!==null&&<><span className={'roadmap-bar roadmap-bar-'+issue.status} style={{left:left+'%',width:width+'%'}} title={issue.title+' · prazo '+issue.due_date}/><span className="roadmap-due-dot" style={{left:due+'%'}}/></>}</div>
+                </div>;
+              };
+              return <>{activeProjects.map(project=>{
+                const projectItems=roadmapItems.filter(issue=>issue.project_id===project.id);
+                const rootItems=projectItems.filter(issue=>!issue.parent_issue_id||!projectItems.some(parent=>parent.id===issue.parent_issue_id));
+                const renderTree=(issue:Issue,depth=0):React.ReactNode=><React.Fragment key={issue.id}>{renderRoadmapRow(issue,depth)}{projectItems.filter(child=>child.parent_issue_id===issue.id).map(child=>renderTree(child,depth+1))}</React.Fragment>;
+                return <section className="roadmap-project roadmap-gantt-project" key={project.id}><header><div><span className="project-mark">{project.key.slice(0,2)}</span><div><strong>{project.name}</strong><small>{project.key} · {clients.find(client=>client.id===project.client_id)?.name??'Sem cliente'}</small></div></div><span className="count">{projectItems.length} itens</span></header>
+                  <div className="roadmap-gantt-scroll"><div className="roadmap-gantt-canvas"><div className="roadmap-gantt-ruler"><div>Hierarquia</div><div className="roadmap-gantt-calendar">{marks.map((mark,index)=><span key={index} style={{left:mark.left+'%',width:mark.width+'%'}}>{mark.label}</span>)}</div></div>{rootItems.map(issue=>renderTree(issue))}{!projectItems.length&&<p className="muted">Adicione épicos e tarefas para visualizar o roadmap.</p>}</div></div>
+                </section>;
+              })}{!activeProjects.length&&<div className="empty-state compact-empty"><strong>Sem projetos para mostrar</strong><p>Abra um projeto ou ajuste os filtros.</p></div>}</>;
+            })()}
           </div> : taskView === 'hierarchy' ? <div className="issue-hierarchy">
             {(() => {
               const visibleIds = new Set(filteredIssues.map(issue => issue.id));
