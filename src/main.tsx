@@ -66,7 +66,7 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [memberEmailDrafts, setMemberEmailDrafts] = useState<Record<string, string>>({});
-  const [memberRoleDrafts, setMemberRoleDrafts] = useState<Record<string, 'analyst' | 'viewer'>>({});
+  const [memberRoleDrafts, setMemberRoleDrafts] = useState<Record<string, 'analyst'>>({});
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
@@ -750,7 +750,7 @@ function App() {
                 <h4>{workspace.name}</h4>
                 {canManageMembers && <form className="member-add-form" onSubmit={event => { event.preventDefault(); void addWorkspaceMember(workspace.id); }}>
                   <div className="field"><label htmlFor={`member-email-${workspace.id}`}>Adicionar pessoa pelo e-mail</label><input id={`member-email-${workspace.id}`} type="email" value={memberEmailDrafts[workspace.id] || ''} onChange={event => setMemberEmailDrafts(current => ({ ...current, [workspace.id]: event.target.value }))} placeholder="pessoa@empresa.com" autoComplete="off" required /></div>
-                  <div className="field"><label htmlFor={`member-role-${workspace.id}`}>Acesso inicial</label><select id={`member-role-${workspace.id}`} value={memberRoleDrafts[workspace.id] || 'analyst'} onChange={event => setMemberRoleDrafts(current => ({ ...current, [workspace.id]: event.target.value as 'analyst' | 'viewer' }))}><option value="analyst">Analista</option><option value="viewer">Visualizador</option></select></div>
+                  <div className="field"><label htmlFor={`member-role-${workspace.id}`}>Acesso inicial</label><select id={`member-role-${workspace.id}`} value={memberRoleDrafts[workspace.id] || 'analyst'} onChange={event => setMemberRoleDrafts(current => ({ ...current, [workspace.id]: event.target.value as 'analyst' }))}><option value="analyst">Analista</option></select></div>
                   <button type="submit" className="button button-primary" disabled={busy || !(memberEmailDrafts[workspace.id] || '').trim()}>{busy ? 'Adicionando…' : 'Adicionar ao time'} ↗</button>
                   <p className="muted">A pessoa precisa ter uma conta cadastrada no Lock Project. Convites por e-mail ainda não estão ativos.</p>
                 </form>}
@@ -760,7 +760,7 @@ function App() {
                   const isLastOwner = member.role === 'owner' && members.filter(item => item.role === 'owner').length <= 1;
                   return <div className="member-row" key={member.workspace_id + member.user_id}>
                     <div className="member-identity"><span className="assignee-avatar">{(profile?.display_name || member.user_id).slice(0,1).toUpperCase()}</span><div><strong>{profile?.display_name || (isSelf ? session?.user.email : null) || 'Membro da equipe'}{isSelf ? ' (você)' : ''}</strong><small>{member.user_id.slice(0,8)}…</small></div></div>
-                    <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || !canManageMembers || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}><option value="owner">Proprietário do time</option><option value="analyst">Analista</option><option value="viewer">Visualizador</option>{isPlatformAdmin && <option value="admin">Administrador legado</option>}</select>
+                    <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || !canManageMembers || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}><option value="owner">Proprietário do time</option><option value="analyst">Analista</option>{member.role !== 'owner' && member.role !== 'analyst' && <option value={member.role}>{member.role}</option>}</select>
                     <button type="button" className="text-button danger-text" disabled={busy || !canManageMembers || isSelf || isLastOwner} onClick={() => void removeMember(member)}>Remover</button>
                   </div>;
                 }) : <p className="muted">Nenhum membro encontrado neste time.</p>}
