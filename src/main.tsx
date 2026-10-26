@@ -536,12 +536,13 @@ function App() {
             <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter(activeProjectId || 'all'); setIssueClientFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); }}>Limpar filtros</button>
           </div>
           <div className="task-results-note">Exibindo {filteredIssues.length} de {issues.length} tarefas</div>
-          <div className="task-view-switch" role="group" aria-label="Visualização das tarefas">
-            <button type="button" className={taskView === 'kanban' ? 'active' : ''} onClick={() => setTaskView('kanban')}>▦ Quadro Kanban</button>
-            <button type="button" className={taskView === 'list' ? 'active' : ''} onClick={() => setTaskView('list')}>☷ Lista</button>
-            <button type="button" className={taskView === 'timeline' ? 'active' : ''} onClick={() => setTaskView('timeline')}>↗ Timeline</button>
-            <button type="button" className={taskView === 'roadmap' ? 'active' : ''} onClick={() => setTaskView('roadmap')}>▤ Roadmap</button>
-          </div>
+          <nav className="task-view-switch" role="group" aria-label="Visualização das tarefas">
+            <button type="button" aria-pressed={taskView === 'kanban'} className={taskView === 'kanban' ? 'active' : ''} onClick={() => setTaskView('kanban')}>▦ Kanban</button>
+            <button type="button" aria-pressed={taskView === 'list'} className={taskView === 'list' ? 'active' : ''} onClick={() => setTaskView('list')}>☷ Lista</button>
+            <button type="button" aria-pressed={taskView === 'hierarchy'} className={taskView === 'hierarchy' ? 'active' : ''} onClick={() => setTaskView('hierarchy')}>⌘ Hierarquia</button>
+            <button type="button" aria-pressed={taskView === 'timeline'} className={taskView === 'timeline' ? 'active' : ''} onClick={() => setTaskView('timeline')}>↗ Timeline</button>
+            <button type="button" aria-pressed={taskView === 'roadmap'} className={taskView === 'roadmap' ? 'active' : ''} onClick={() => setTaskView('roadmap')}>▤ Roadmap</button>
+          </nav>
           {taskView === 'kanban' ? <div className="kanban-board">
             {[
               { id: 'backlog', label: 'Backlog' }, { id: 'todo', label: 'A fazer' },
