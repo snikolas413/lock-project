@@ -379,3 +379,28 @@
 /* Dedicated administration screen: keep operational views out of the admin workspace. */
 .page-admin>.dashboard-heading,.page-admin>.stats-grid,.page-admin>.dashboard-columns,.page-admin>.task-management{display:none!important}
 .page-admin .workspace-management{margin-top:0}
+
+
+/* Dedicated project workspace navigation and summary */
+.project-section-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:18px 0 22px;padding:6px;border:1px solid #ffffff12;border-radius:12px;background:#0d1219}
+.project-section-nav button{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid transparent;border-radius:8px;background:transparent;color:#9ca7b5;font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:background .16s ease,color .16s ease}
+.project-section-nav button:hover{background:#ffffff08;color:#e8edf3}
+.project-section-nav button.active{background:#c6f08b16;border-color:#c6f08b35;color:#c6f08b}
+.project-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 22px}
+.project-summary-card{min-width:0;padding:17px;border:1px solid #ffffff13;border-radius:12px;background:#111720}
+.project-summary-card>span{display:block;color:#9ca7b5;font-size:11px}
+.project-summary-card>strong{display:block;margin:9px 0;font-size:27px;letter-spacing:-.7px;color:#e8edf3}
+.project-summary-card>small{color:#8d9aa9;font-size:10px}
+.project-summary-card .progress-track{margin-top:12px}
+.project-summary-wide{grid-column:1/-1}
+.project-summary-wide .section-title{margin-bottom:12px}
+.project-summary-wide h3{margin:3px 0;font-size:15px}
+.project-upcoming-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:14px;padding:11px 0;border-top:1px solid #ffffff0d;font-size:12px}
+.project-upcoming-row>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-upcoming-row>small{color:#9ca7b5;font-size:11px}
+.project-section-summary .task-management{display:none}
+.project-section-summary .project-summary-grid{margin-top:4px}
+.page-project .task-view-switch{display:none}
+.project-workspace-heading{margin-bottom:10px}
+@media(max-width:900px){.project-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.project-section-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.project-section-nav button{justify-content:center;padding:10px 6px}.project-summary-grid{grid-template-columns:1fr}.project-summary-wide{grid-column:auto}.project-upcoming-row{grid-template-columns:minmax(0,1fr) auto}.project-upcoming-row .priority{display:none}}
