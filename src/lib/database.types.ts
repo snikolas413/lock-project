@@ -125,6 +125,7 @@ export type Database = {
       }
       issues: {
         Row: {
+          parent_issue_id: string | null
           assignee_id: string | null
           created_at: string
           description: string | null
@@ -141,6 +142,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          parent_issue_id?: string | null
           assignee_id?: string | null
           created_at?: string
           description?: string | null
@@ -157,6 +159,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          parent_issue_id?: string | null
           assignee_id?: string | null
           created_at?: string
           description?: string | null
@@ -173,6 +176,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "issues_parent_issue_id_fkey"
+            columns: ["parent_issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "issues_project_id_fkey"
             columns: ["project_id"]

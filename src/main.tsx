@@ -7,7 +7,7 @@ import './styles.css';
 type Workspace = { id: string; name: string; slug: string; created_at: string };
 type Client = { id: string; workspace_id: string; name: string; slug: string; description: string | null; status: string; created_at: string };
 type Project = { id: string; name: string; key: string; description: string | null; status: string; workspace_id: string; client_id: string; updated_at: string };
-type Issue = { id: string; title: string; description: string | null; issue_number: number; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; assignee_id: string | null };
+type Issue = { id: string; title: string; description: string | null; issue_number: number; type: string; parent_issue_id: string | null; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; assignee_id: string | null };
 type TeamMember = { workspace_id: string; user_id: string; role: string };
 type Profile = { id: string; display_name: string | null };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
@@ -29,6 +29,8 @@ function App() {
   const [projectDescription, setProjectDescription] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
+  const [taskType, setTaskType] = useState('task');
+  const [taskParentIssue, setTaskParentIssue] = useState('');
   const [issueSearch, setIssueSearch] = useState('');
   const [issueProjectFilter, setIssueProjectFilter] = useState('all');
   const [issueClientFilter, setIssueClientFilter] = useState('all');
@@ -104,7 +106,7 @@ function App() {
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
     if (!nextProjects.length) { setIssues([]); setLabels([]); setIssueLabels([]); return; }
-    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,status,priority,updated_at,project_id,due_date,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
+    const { data: issueData, error: issueError } = await supabase.from('issues').select('id,title,description,issue_number,type,parent_issue_id,status,priority,updated_at,project_id,due_date,assignee_id').in('project_id', nextProjects.map(p => p.id)).order('updated_at', { ascending: false });
     if (issueError) setError(issueError.message);
     else {
       const nextIssues = (issueData ?? []) as Issue[];
@@ -197,6 +199,8 @@ function App() {
     const payload = {
       title: taskTitle.trim(),
       description: taskDescription.trim() || null,
+      type: taskType,
+      parent_issue_id: taskParentIssue || null,
       project_id: projectId,
       status: taskStatus,
       priority: taskPriority,
@@ -208,7 +212,7 @@ function App() {
       : await supabase.from('issues').insert({ ...payload, reporter_id: session.user.id });
     if (result.error) setError(result.error.message);
     else {
-      setTaskTitle(''); setTaskDescription(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium');
+      setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium');
       setEditingIssueId(null); setMessage(editingIssueId ? 'Tarefa atualizada.' : 'Tarefa criada com sucesso.');
       await loadWorkspaces();
     }
@@ -219,6 +223,8 @@ function App() {
     setEditingIssueId(issue.id);
     setTaskTitle(issue.title);
     setTaskDescription(issue.description ?? '');
+    setTaskType(issue.type ?? 'task');
+    setTaskParentIssue(issue.parent_issue_id ?? '');
     setTaskProject(issue.project_id);
     setTaskStatus(issue.status);
     setTaskPriority(issue.priority);
@@ -339,11 +345,13 @@ function App() {
         <section className="task-management">
           <div className="section-title"><div><p className="eyebrow">EXECUÇÃO</p><h2>Gerenciar tarefas</h2></div><span className="count">{issues.length} tarefas</span></div>
           <form id="task-form" className="task-form" onSubmit={saveIssue}>
-            <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setTaskTitle(''); setTaskDescription(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
+            <div className="task-form-heading"><strong>{editingIssueId ? 'Editar tarefa' : 'Nova tarefa'}</strong>{editingIssueId && <button type="button" className="text-button" onClick={() => { setEditingIssueId(null); setTaskTitle(''); setTaskDescription(''); setTaskType('task'); setTaskParentIssue(''); setTaskDueDate(''); setTaskAssignee(''); setTaskStatus('backlog'); setTaskPriority('medium'); }}>Cancelar edição</button>}</div>
             <div className="task-form-grid">
               <div className="field task-title-field"><label htmlFor="task-title">Título da tarefa</label><input id="task-title" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Ex.: Revisar fluxo de cadastro" maxLength={240} required /></div>
+              <div className="field"><label htmlFor="task-type">Tipo de item</label><select id="task-type" value={taskType} onChange={e => { setTaskType(e.target.value); setTaskParentIssue(''); }}><option value="epic">Épico</option><option value="story">História</option><option value="task">Tarefa</option><option value="bug">Bug</option><option value="subtask">Subtarefa</option></select></div>
+              <div className="field"><label htmlFor="task-parent">Tarefa-pai <span className="optional">(opcional)</span></label><select id="task-parent" value={taskParentIssue} onChange={e => setTaskParentIssue(e.target.value)} disabled={taskType === 'epic'}><option value="">Sem tarefa-pai</option>{issues.filter(parent => parent.id !== editingIssueId && parent.project_id === (taskProject || projects[0]?.id) && (taskType === 'subtask' ? parent.type !== 'subtask' : parent.type === 'epic')).map(parent => <option key={parent.id} value={parent.id}>{parent.type.toUpperCase()} · {parent.title}</option>)}</select><small className="muted">Histórias, tarefas e bugs podem pertencer a um épico. Subtarefas podem pertencer a um item que não seja subtarefa.</small></div>
               <div className="field task-description-field"><label htmlFor="task-description">Descrição <span className="optional">(opcional)</span></label><textarea id="task-description" value={taskDescription} onChange={e => setTaskDescription(e.target.value)} placeholder="Contexto, critérios de aceite ou próximos passos" rows={2} maxLength={4000}/></div>
-              <div className="field"><label htmlFor="task-project">Projeto</label><select id="task-project" value={taskProject || projects[0]?.id || ''} onChange={e => { setTaskProject(e.target.value); setTaskAssignee(''); }} required disabled={!projects.length}>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
+              <div className="field"><label htmlFor="task-project">Projeto</label><select id="task-project" value={taskProject || projects[0]?.id || ''} onChange={e => { setTaskProject(e.target.value); setTaskAssignee(''); setTaskParentIssue(''); }} required disabled={!projects.length}>{projects.map(p => <option key={p.id} value={p.id}>{p.key} · {p.name}</option>)}</select></div>
               <div className="field"><label htmlFor="task-status">Status</label><select id="task-status" value={taskStatus} onChange={e => setTaskStatus(e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
               <div className="field"><label htmlFor="task-priority">Prioridade</label><select id="task-priority" value={taskPriority} onChange={e => setTaskPriority(e.target.value)}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
               <div className="field"><label htmlFor="task-assignee">Responsável <span className="optional">(opcional)</span></label><select id="task-assignee" value={taskAssignee} onChange={e => setTaskAssignee(e.target.value)}><option value="">Sem responsável</option>{teamMembers.filter(member => member.workspace_id === projects.find(p => p.id === (taskProject || projects[0]?.id))?.workspace_id).map(member => <option key={member.user_id} value={member.user_id}>{profiles.find(profile => profile.id === member.user_id)?.display_name || `Membro ${member.user_id.slice(0, 8)}`}</option>)}</select></div>
@@ -408,7 +416,7 @@ function App() {
           </div> : <div className="task-table">
             <div className="task-table-head"><span>Tarefa</span><span>Status</span><span>Responsável</span><span>Prioridade</span><span>Prazo</span><span>Etiquetas</span><span>Ações</span></div>
             {filteredIssues.length ? filteredIssues.map(issue => <article className="task-table-row" key={issue.id}>
-              <div className="task-name"><strong>{issue.title}</strong><small>{projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}{issue.description ? ` · ${issue.description}` : ''}</small></div>
+              <div className="task-name"><strong>{issue.title}</strong><small><span className="issue-type-tag">{({ epic: 'ÉPICO', story: 'HISTÓRIA', task: 'TAREFA', bug: 'BUG', subtask: 'SUBTAREFA' } as Record<string, string>)[issue.type] ?? 'TAREFA'}</span> · {projects.find(p => p.id === issue.project_id)?.key ?? 'TASK'}-{issue.issue_number}{issue.parent_issue_id ? ` · Pai: ${issues.find(parent => parent.id === issue.parent_issue_id)?.title ?? 'item vinculado'}` : ''}{issue.description ? ` · ${issue.description}` : ''}</small></div>
               <select aria-label={`Status de ${issue.title}`} value={issue.status} disabled={busy} onChange={e => void moveIssueToStatus(issue, e.target.value)}><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select>
               <select aria-label={`Responsável por ${issue.title}`} value={issue.assignee_id ?? ''} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ assignee_id: e.target.value || null }).eq('id', issue.id); if (error) setError(error.message); else { setMessage('Responsável atualizado.'); await loadWorkspaces(); } setBusy(false); }}><option value="">Sem responsável</option>{teamMembers.filter(member => member.workspace_id === projects.find(p => p.id === issue.project_id)?.workspace_id).map(member => <option key={member.user_id} value={member.user_id}>{profiles.find(profile => profile.id === member.user_id)?.display_name || `Membro ${member.user_id.slice(0, 8)}`}</option>)}</select>
               <select aria-label={`Prioridade de ${issue.title}`} value={issue.priority} disabled={busy} onChange={async e => { setBusy(true); setError(''); const { error } = await supabase.from('issues').update({ priority: e.target.value }).eq('id', issue.id); if (error) setError(error.message); else await loadWorkspaces(); setBusy(false); }}><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select>
