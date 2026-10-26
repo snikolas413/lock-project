@@ -37,6 +37,7 @@ function App() {
   const [issueClientFilter, setIssueClientFilter] = useState('all');
   const [issueStatusFilter, setIssueStatusFilter] = useState('all');
   const [issuePriorityFilter, setIssuePriorityFilter] = useState('all');
+  const [issueSort, setIssueSort] = useState<'updated' | 'priority' | 'due_date'>('updated');
   const [taskView, setTaskView] = useState<'list' | 'kanban' | 'hierarchy' | 'timeline' | 'roadmap'>('kanban');
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
@@ -297,6 +298,17 @@ function App() {
       && (issueStatusFilter === 'all' || issue.status === issueStatusFilter)
       && (issuePriorityFilter === 'all' || issue.priority === issuePriorityFilter)
       && (issueLabelFilter === 'all' || issueLabels.some(link => link.issue_id === issue.id && link.label_id === issueLabelFilter));
+  }).sort((a, b) => {
+    if (issueSort === 'priority') {
+      const rank: Record<string, number> = { highest: 0, high: 1, medium: 2, low: 3, lowest: 4 };
+      return (rank[a.priority] ?? 5) - (rank[b.priority] ?? 5) || b.updated_at.localeCompare(a.updated_at);
+    }
+    if (issueSort === 'due_date') {
+      const aDue = a.due_date || a.end_date || '9999-12-31';
+      const bDue = b.due_date || b.end_date || '9999-12-31';
+      return aDue.localeCompare(bDue) || b.updated_at.localeCompare(a.updated_at);
+    }
+    return b.updated_at.localeCompare(a.updated_at);
   });
 
   async function createLabel(event: FormEvent) {
@@ -544,7 +556,8 @@ function App() {
             <div className="field"><label htmlFor="issue-status-filter">Status</label><select id="issue-status-filter" value={issueStatusFilter} onChange={e => setIssueStatusFilter(e.target.value)}><option value="all">Todos</option><option value="backlog">Backlog</option><option value="todo">A fazer</option><option value="in_progress">Em andamento</option><option value="in_review">Em revisão</option><option value="done">Concluída</option><option value="cancelled">Cancelada</option></select></div>
             <div className="field"><label htmlFor="issue-priority-filter">Prioridade</label><select id="issue-priority-filter" value={issuePriorityFilter} onChange={e => setIssuePriorityFilter(e.target.value)}><option value="all">Todas</option><option value="lowest">Mínima</option><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option><option value="highest">Urgente</option></select></div>
             <div className="field"><label htmlFor="issue-label-filter">Etiqueta</label><select id="issue-label-filter" value={issueLabelFilter} onChange={e => setIssueLabelFilter(e.target.value)}><option value="all">Todas</option>{labels.filter(label => issueProjectFilter === 'all' || label.project_id === issueProjectFilter).map(label => <option key={label.id} value={label.id}>{label.name}</option>)}</select></div>
-            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter(activeProjectId || 'all'); setIssueClientFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); }}>Limpar filtros</button>
+            <div className="field"><label htmlFor="issue-sort">Ordenar por</label><select id="issue-sort" value={issueSort} onChange={e => setIssueSort(e.target.value as 'updated' | 'priority' | 'due_date')}><option value="updated">Mais recentes</option><option value="priority">Maior prioridade</option><option value="due_date">Prazo mais próximo</option></select></div>
+            <button type="button" className="text-button clear-filters" onClick={() => { setIssueSearch(''); setIssueProjectFilter(activeProjectId || 'all'); setIssueClientFilter('all'); setIssueStatusFilter('all'); setIssuePriorityFilter('all'); setIssueLabelFilter('all'); setIssueSort('updated'); }}>Limpar filtros</button>
           </div>
           <div className="task-results-note">Exibindo {filteredIssues.length} de {issues.length} tarefas</div>
           <nav className="task-view-switch" role="group" aria-label="Visualização das tarefas">
