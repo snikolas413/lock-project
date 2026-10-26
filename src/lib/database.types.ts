@@ -58,6 +58,15 @@ export type Database = {
           },
         ]
       }
+      issue_dependencies: {
+        Row: { id: string; predecessor_id: string; successor_id: string; created_at: string }
+        Insert: { id?: string; predecessor_id: string; successor_id: string; created_at?: string }
+        Update: { id?: string; predecessor_id?: string; successor_id?: string; created_at?: string }
+        Relationships: [
+          { foreignKeyName: "issue_dependencies_predecessor_id_fkey"; columns: ["predecessor_id"]; isOneToOne: false; referencedRelation: "issues"; referencedColumns: ["id"] },
+          { foreignKeyName: "issue_dependencies_successor_id_fkey"; columns: ["successor_id"]; isOneToOne: false; referencedRelation: "issues"; referencedColumns: ["id"] }
+        ]
+      }
       issue_comments: {
         Row: {
           author_id: string
