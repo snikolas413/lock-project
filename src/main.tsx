@@ -83,7 +83,7 @@ function App() {
     setWorkspaces(nextWorkspaces);
     setSelectedWorkspace(current => current && nextWorkspaces.some(w => w.id === current) ? current : (nextWorkspaces[0]?.id ?? ''));
     if (!nextWorkspaces.length) { setClients([]); setProjects([]); setIssues([]); setTeamMembers([]); setProfiles([]); return; }
-    const { data: clientData, error: clientError } = await supabase.from('clients').select('id,workspace_id,name,slug,description,status,created_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('name');
+    const { data: clientData, error: clientError } = await (supabase as any).from('clients').select('id,workspace_id,name,slug,description,status,created_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('name');
     if (clientError) { setError(clientError.message); return; }
     const nextClients = (clientData ?? []) as Client[];
     setClients(nextClients);
@@ -98,7 +98,7 @@ function App() {
       if (profileError) setError(profileError.message);
       else setProfiles((profileData ?? []) as Profile[]);
     } else setProfiles([]);
-    const { data: projectData, error: projectError } = await supabase.from('projects').select('id,name,key,description,status,workspace_id,client_id,updated_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('updated_at', { ascending: false });
+    const { data: projectData, error: projectError } = await (supabase as any).from('projects').select('id,name,key,description,status,workspace_id,client_id,updated_at').in('workspace_id', nextWorkspaces.map(w => w.id)).order('updated_at', { ascending: false });
     if (projectError) { setError(projectError.message); return; }
     const nextProjects = (projectData ?? []) as Project[];
     setProjects(nextProjects);
@@ -182,7 +182,7 @@ function App() {
     const slugBase = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'cliente';
     const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
     setBusy(true); setError(''); setMessage('');
-    const { data, error } = await supabase.from('clients').insert({ workspace_id: selectedWorkspace, name, slug, description: clientDescription.trim() || null, created_by: session.user.id }).select('id').single();
+    const { data, error } = await (supabase as any).from('clients').insert({ workspace_id: selectedWorkspace, name, slug, description: clientDescription.trim() || null, created_by: session.user.id }).select('id').single();
     if (error) setError(error.message);
     else { setClientName(''); setClientDescription(''); if (data?.id) setProjectClient(data.id); setMessage('Cliente criado. Agora você pode vincular vários projetos a ele.'); await loadWorkspaces(); }
     setBusy(false);
@@ -322,7 +322,7 @@ function App() {
               if (!session?.user || !workspaces.length || !projectName.trim() || !projectClient) return;
               setBusy(true); setError(''); setMessage('');
               const base = projectName.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'').slice(0,5) || 'PROJ';
-              const { error } = await supabase.from('projects').insert({name:projectName.trim(),key:base+Date.now().toString().slice(-4),description:projectDescription.trim()||null,workspace_id:selectedWorkspace||workspaces[0].id,client_id:projectClient,created_by:session.user.id});
+              const { error } = await (supabase as any).from('projects').insert({name:projectName.trim(),key:base+Date.now().toString().slice(-4),description:projectDescription.trim()||null,workspace_id:selectedWorkspace||workspaces[0].id,client_id:projectClient,created_by:session.user.id});
               if(error) setError(error.message); else {setProjectName('');setProjectDescription('');setMessage('Projeto criado com sucesso.'); await loadWorkspaces();}
               setBusy(false);
             }}><div className="section-title"><div><p className="eyebrow">NOVO PROJETO</p><h2>Comece uma iniciativa</h2></div></div>
