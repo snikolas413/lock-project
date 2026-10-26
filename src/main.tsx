@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Session } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
