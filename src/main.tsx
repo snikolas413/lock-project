@@ -802,7 +802,7 @@ function App() {
                     <select aria-label={`Permissão de ${profile?.display_name || member.user_id}`} value={member.role} disabled={busy || !canManageMembers || isLastOwner} onChange={event => void updateMemberRole(member,event.target.value)}>{isPlatformAdmin && <><option value="owner">Proprietário do time</option><option value="admin">Administrador do time</option></>}<option value="analyst">Analista</option><option value="member">Membro</option><option value="viewer">Visualizador</option></select>
                     <button type="button" className="text-button danger-text" disabled={busy || !canManageMembers || isSelf || isLastOwner} onClick={() => void removeMember(member)}>Remover</button>
                   </div>;
-                }) : <p className="muted">Nenhum membro encontrado neste time.</p>}
+                }) : <div className="empty-state compact-empty"><strong>Este time ainda não tem membros</strong><p>{isPlatformAdmin ? "Como administrador geral, você não entra automaticamente nos times. Convide uma pessoa e selecione “Proprietário do time” para definir quem será responsável por esta equipe." : "Adicione o primeiro membro para começar a colaborar neste time."}</p></div>}
               </section>;
             })}
           </div>
