@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import './styles.css';
 import { AdminUsersSection, type AdminUser } from './components/AdminUsersSection';
+import { OverviewInsights } from './components/OverviewInsights';
 
 type Workspace = { id: string; name: string; slug: string; created_at: string };
 type Client = { id: string; workspace_id: string; name: string; slug: string; description: string | null; status: string; created_at: string };
@@ -541,6 +542,7 @@ function App() {
           <article className="stat-card"><span className="stat-icon">◇</span><span className="stat-label">Clientes</span><strong>{clients.length}</strong><small>Total de clientes cadastrados</small></article>
           <article className="stat-card"><span className="stat-icon">◷</span><span className="stat-label">Projetos</span><strong>{projects.length}</strong><small>Total de projetos cadastrados</small></article>
         </div>
+        <OverviewInsights projects={projects} issues={issues} profiles={profiles} dependencies={issueDependencies} onOpenIssue={issue => { setActivePage('tasks'); setSelectedIssue(issue as Issue); }} onOpenProject={openProject} />
         <div className="dashboard-columns">
           <section className="dashboard-section"><div className="section-title"><div><p className="eyebrow">SEUS PROJETOS</p><h2>Projetos recentes</h2></div><span className="count">{projects.length}</span></div>
             {projects.length ? <div className="project-list">{projects.slice(0,6).map(p=><article className="project-row project-row-clickable" key={p.id} role="button" tabIndex={0} onClick={()=>openProject(p.id)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openProject(p.id);}}}><span className="project-mark">{p.key.slice(0,2)}</span><div className="project-copy"><strong>{p.name}</strong><span>{p.key} · {clients.find(client=>client.id===p.client_id)?.name ?? 'Sem cliente'} · {p.status}</span></div><span className="project-status">Ativo</span></article>)}</div> : <div className="empty-state compact-empty"><span className="empty-icon">◇</span><strong>Seu primeiro projeto começa aqui</strong><p>Crie um projeto para reunir tarefas e acompanhar as entregas.</p></div>}
