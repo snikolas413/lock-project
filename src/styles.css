@@ -417,3 +417,21 @@
 .gantt-dependencies.has-schedule-conflict{border-left:3px solid #d97706;padding-left:9px;background:color-mix(in srgb,#d97706 7%,transparent)}
 .gantt-schedule-warning{display:block;color:#b45309;font-size:11px;line-height:1.4;margin:3px 0}
 .gantt-dependencies.is-blocked.has-schedule-conflict{border-left-color:#dc2626}
+
+/* Cronograma: hierarquia visual de fases, entregas e tarefas */
+.gantt-row-epic{background:linear-gradient(90deg,#c6f08b0c,transparent 75%);border-top:1px solid #c6f08b28;border-bottom:1px solid #c6f08b14}
+.gantt-row-story{background:linear-gradient(90deg,#72b8f50b,transparent 75%);border-left:2px solid #72b8f5}
+.gantt-title-line{display:flex;align-items:center;gap:7px;min-width:0}
+.gantt-title-line>strong{min-width:0;overflow-wrap:anywhere}
+.gantt-type-badge{display:inline-flex;align-items:center;flex-shrink:0;padding:3px 6px;border:1px solid #ffffff20;border-radius:5px;background:#ffffff08;color:#aab6c3;font-size:9px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+.gantt-type-epic{border-color:#c6f08b65;background:#c6f08b16;color:#c6f08b}
+.gantt-type-story{border-color:#72b8f565;background:#72b8f516;color:#8bc8ff}
+.gantt-type-milestone{border-color:#c7a0fa65;background:#c7a0fa16;color:#d7b9ff}
+.gantt-row-epic .gantt-bar{height:15px;border:1px solid #c6f08b;background:#789b42;box-shadow:0 0 0 2px #c6f08b18}
+.gantt-row-story .gantt-bar{height:11px;border:1px solid #72b8f5;background:#397fb9}
+.gantt-row-epic .gantt-task-label>small{color:#b5ce91}
+.gantt-row-story .gantt-task-label>small{color:#9bc9ee}
+.gantt-row-epic .gantt-milestone,.gantt-row-story .gantt-milestone{display:none}
+.gantt-row-task .gantt-bar{height:8px;opacity:.92}
+.gantt-row-overdue .gantt-title-line:after{content:'ATRASADA';margin-left:auto;flex-shrink:0;color:#ff9e91;font-size:9px;font-weight:700}
+@media(max-width:760px){.gantt-title-line{align-items:flex-start;flex-direction:column;gap:4px}.gantt-row-overdue .gantt-title-line:after{margin-left:0}}
