@@ -86,6 +86,15 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try { return localStorage.getItem('lock-project-theme') === 'light' ? 'light' : 'dark'; }
+    catch { return 'dark'; }
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('lock-project-theme', theme); } catch { /* storage may be unavailable */ }
+  }, [theme]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) { setReady(true); return; }
@@ -520,7 +529,7 @@ function App() {
   }
 
   return <main className="app-shell">
-    <header className="topbar"><a className="brand" href="#" onClick={event=>{event.preventDefault();closeProject();setActivePage('overview');}}><span className="brand-mark">L</span><span>lock<span className="brand-light">project</span></span></a>{session && <><span className="topbar-context">{workspaces.find(w=>w.id===selectedWorkspace)?.name || 'Workspace'}</span><span className="topbar-user">{session.user.email}</span><button className="button button-quiet" onClick={signOut}>Sair</button></>}</header>
+    <header className="topbar"><a className="brand" href="#" onClick={event=>{event.preventDefault();closeProject();setActivePage('overview');}}><span className="brand-mark">L</span><span>lock<span className="brand-light">project</span></span></a>{session && <><span className="topbar-context">{workspaces.find(w=>w.id===selectedWorkspace)?.name || 'Workspace'}</span><label className="theme-picker" title="Escolher aparência"><span aria-hidden="true">{theme === 'dark' ? '☾' : '☀'}</span><select aria-label="Tema da interface" value={theme} onChange={event=>setTheme(event.target.value as 'dark' | 'light')}><option value="dark">Tema escuro</option><option value="light">Tema claro</option></select></label><span className="topbar-user">{session.user.email}</span><button className="button button-quiet" onClick={signOut}>Sair</button></>}</header>
     {session && <aside className="product-sidebar">
       <div className="sidebar-group-label">WORKSPACE</div>
       <button className={activePage==='overview'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('overview');}}>▦ <span>Visão geral</span></button>
