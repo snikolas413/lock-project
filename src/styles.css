@@ -893,3 +893,124 @@ body:has(.task-edit-modal)::after{content:"";position:fixed;inset:0;z-index:110;
 @media (prefers-reduced-motion: reduce) {
   :root *, :root *::before, :root *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+
+/* Final UI polish: consistent typography and strictly scoped overview layout. */
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+  --font-xs: 0.75rem;
+  --font-sm: 0.8125rem;
+  --font-base: 0.875rem;
+  --font-md: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.375rem;
+  --font-2xl: 1.875rem;
+}
+body { font-family: inherit; font-size: var(--font-base); line-height: 1.5; }
+button, input, select, textarea { font-family: inherit; }
+:root .dashboard-heading h1 { font-size: clamp(1.65rem, 2.5vw, 2.125rem); line-height: 1.2; letter-spacing: -0.035em; font-weight: 680; }
+:root .section-title h2,
+:root .overview-panel-heading h2 { font-size: var(--font-lg); line-height: 1.35; letter-spacing: -0.02em; font-weight: 650; }
+:root .field label,
+:root .workspace-form label { font-size: var(--font-xs); line-height: 1.4; font-weight: 600; }
+:root .muted,
+:root .dashboard-heading .muted { font-size: var(--font-sm); line-height: 1.6; }
+:root .button { font-size: var(--font-sm); line-height: 1.25; }
+:root .topbar-user,
+:root .user-email { font-size: var(--font-xs); }
+:root .eyebrow { font-size: 0.6875rem; letter-spacing: 0.11em; line-height: 1.4; }
+
+/* Overview-only layout rules stay inside the overview page. */
+.page-overview .overview-insights { width: 100%; min-width: 0; }
+.page-overview .overview-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.page-overview .overview-insights-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.page-overview .overview-panel { min-width: 0; }
+.page-overview .overview-panel-heading h2 { font-size: 1rem; }
+.page-overview .overview-panel-heading p:not(.eyebrow) { font-size: var(--font-xs); line-height: 1.55; }
+.page-overview .overview-project-list strong,
+.page-overview .overview-alert-copy>strong,
+.page-overview .overview-workload>div>span>strong { font-size: var(--font-sm); line-height: 1.45; }
+.page-overview .overview-project-list small,
+.page-overview .overview-alert-copy>small,
+.page-overview .overview-alert-date>small,
+.page-overview .overview-workload>div>span>small { font-size: var(--font-xs); line-height: 1.45; }
+.page-overview .overview-note { font-size: var(--font-xs); line-height: 1.6; }
+.page-overview .overview-project-list>button,
+.page-overview .overview-alert-row { font-family: inherit; }
+@media(max-width: 900px) {
+  .page-overview .overview-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page-overview .overview-insights-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media(max-width: 560px) {
+  .page-overview .overview-kpis { gap: 9px; }
+  .page-overview .overview-kpis article { padding: 13px; }
+  .page-overview .overview-kpis article>strong { font-size: 1.65rem; }
+  .page-overview .overview-panel { padding: 14px; }
+  .page-overview .overview-panel-heading h2 { font-size: 0.9375rem; }
+}
+
+/* Light mode uses a quiet neutral canvas, white surfaces, readable ink and restrained green accents. */
+:root[data-theme="light"] {
+  --app-bg: #f5f7f9;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #f7f9fb;
+  --surface-input: #ffffff;
+  --surface-hover: #eef2f5;
+  --border-color: #dce3e9;
+  --text-primary: #202a35;
+  --text-secondary: #586575;
+  --text-muted: #738091;
+  --accent: #5f842f;
+  color-scheme: light;
+}
+:root[data-theme="light"] body { background: var(--app-bg) !important; }
+:root[data-theme="light"] .content-panel { background: var(--surface) !important; box-shadow: 0 12px 36px #18212b0a; }
+:root[data-theme="light"] .dashboard-section,
+:root[data-theme="light"] .workspace-management,
+:root[data-theme="light"] .task-management,
+:root[data-theme="light"] .label-management,
+:root[data-theme="light"] .client-management,
+:root[data-theme="light"] .member-management,
+:root[data-theme="light"] .project-section-content,
+:root[data-theme="light"] .project-section-panel,
+:root[data-theme="light"] .overview-panel,
+:root[data-theme="light"] .overview-kpis article,
+:root[data-theme="light"] .admin-user-card,
+:root[data-theme="light"] .workspace-card,
+:root[data-theme="light"] .stat-card,
+:root[data-theme="light"] .project-summary-card { background: #fff !important; border-color: #dce3e9 !important; color: #202a35; }
+:root[data-theme="light"] .task-form,
+:root[data-theme="light"] .kanban-column,
+:root[data-theme="light"] .kanban-card,
+:root[data-theme="light"] .issue-modal,
+:root[data-theme="light"] .comment-item,
+:root[data-theme="light"] .progress-card,
+:root[data-theme="light"] .project-row,
+:root[data-theme="light"] .activity-row { background-color: #fff !important; border-color: #e1e6eb !important; color: #202a35; }
+:root[data-theme="light"] .task-table-head,
+:root[data-theme="light"] .kanban-column-heading { background: #f5f7f9 !important; color: #586575; }
+:root[data-theme="light"] .task-table-row { background: #fff; color: #202a35; }
+:root[data-theme="light"] .task-table-row:hover,
+:root[data-theme="light"] .sidebar-link:hover,
+:root[data-theme="light"] .sidebar-project:hover { background: #f1f4f6 !important; }
+:root[data-theme="light"] .field input,
+:root[data-theme="light"] .field select,
+:root[data-theme="light"] .field textarea,
+:root[data-theme="light"] .task-form .field input,
+:root[data-theme="light"] .task-table-row select,
+:root[data-theme="light"] .task-filters .field input,
+:root[data-theme="light"] .task-filters .field select,
+:root[data-theme="light"] .comment-form textarea { background: #fff !important; color: #202a35 !important; border-color: #cbd5df !important; }
+:root[data-theme="light"] .button-quiet,
+:root[data-theme="light"] .text-button,
+:root[data-theme="light"] .task-view-switch button,
+:root[data-theme="light"] .project-section-nav button { background: #fff; color: #344152; border-color: #d6dee6; }
+:root[data-theme="light"] .button-primary { background: #c6f08b; color: #182212; }
+:root[data-theme="light"] .overview-kpis article.danger { background: #fffafa !important; }
+:root[data-theme="light"] .overview-kpis article.warning { background: #fffdf6 !important; }
