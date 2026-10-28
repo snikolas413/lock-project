@@ -632,3 +632,264 @@ body:has(.task-edit-modal)::after{content:"";position:fixed;inset:0;z-index:110;
 .theme-picker select { max-width: 112px; padding: 4px 2px; border: 0; outline: 0; background: transparent; color: inherit; font-size: 11px; font-weight: 650; cursor: pointer; }
 .theme-picker select option { color: #18212b; background: #ffffff; }
 @media(max-width:680px) { .theme-picker { gap: 4px; padding: 5px 6px; } .theme-picker select { max-width: 84px; font-size: 10px; } }
+
+
+/* Complete theme normalization: one semantic palette for both appearances. */
+:root {
+  --app-bg: #0b0e13;
+  --surface: #131821;
+  --surface-raised: #171e28;
+  --surface-muted: #0d1219;
+  --surface-input: #0c1016;
+  --surface-hover: #202833;
+  --border-color: #2a333f;
+  --text-primary: #edf0f4;
+  --text-secondary: #9aa5b3;
+  --text-muted: #7f8996;
+  --accent: #c6f08b;
+  --accent-contrast: #151a10;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --app-bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #f6f8fa;
+  --surface-input: #ffffff;
+  --surface-hover: #edf1f4;
+  --border-color: #dce2e8;
+  --text-primary: #18212b;
+  --text-secondary: #586575;
+  --text-muted: #718092;
+  --accent: #5e842e;
+  --accent-contrast: #ffffff;
+  color-scheme: light;
+}
+:root, body { color: var(--text-primary); }
+:root body { background: var(--app-bg) !important; color: var(--text-primary); }
+:root .content-panel,
+:root .auth-card,
+:root .dashboard-section,
+:root .workspace-management,
+:root .task-management,
+:root .label-management,
+:root .member-management,
+:root .admin-user-card,
+:root .admin-user-help,
+:root .overview-panel,
+:root .project-summary-card,
+:root .project-phase-panel,
+:root .project-detail-panel,
+:root .project-overview-panel {
+  background-color: var(--surface) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary);
+}
+:root .stat-card,
+:root .workspace-card,
+:root .project-row,
+:root .activity-row,
+:root .progress-card,
+:root .task-form,
+:root .task-filters,
+:root .kanban-column,
+:root .kanban-card,
+:root .issue-modal,
+:root .comment-item,
+:root .member-workspace,
+:root .admin-user-memberships,
+:root .team-client-detail,
+:root .project-summary-wide {
+  background-color: var(--surface-raised) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary);
+}
+:root .workspace-list,
+:root .task-table,
+:root .task-table-row,
+:root .task-table-head,
+:root .project-section-nav,
+:root .project-section-nav button,
+:root .project-section-content,
+:root .project-section-panel,
+:root .roadmap-children>div,
+:root .gantt-dependencies,
+:root .admin-membership-chip {
+  border-color: var(--border-color) !important;
+}
+:root .task-table-head,
+:root .kanban-column-heading,
+:root .sidebar-bottom,
+:root .workspace-form,
+:root .create-project-form,
+:root .comment-form,
+:root .label-create-form,
+:root .member-add-form {
+  border-color: var(--border-color) !important;
+}
+:root .task-table-row:hover,
+:root .sidebar-link:hover,
+:root .sidebar-project:hover,
+:root .project-section-nav button:hover,
+:root .team-project-link:hover {
+  background-color: var(--surface-hover) !important;
+}
+:root .product-sidebar,
+:root .sidebar,
+:root .sidebar-nav,
+:root .sidebar-footer {
+  background-color: var(--surface) !important;
+  border-color: var(--border-color) !important;
+}
+:root .field label,
+:root .workspace-form label,
+:root .comment-form label,
+:root .label-create-form label,
+:root .section-title h2,
+:root .section-title h3,
+:root .dashboard-heading h1,
+:root .dashboard-heading h2,
+:root .dashboard-heading h3,
+:root .project-copy strong,
+:root .activity-copy strong,
+:root .task-name strong,
+:root .kanban-card-title,
+:root .issue-modal-header h2,
+:root .comment-meta strong,
+:root .admin-user-identity strong,
+:root .admin-user-memberships>strong,
+:root .overview-panel h2,
+:root .overview-panel h3,
+:root .overview-panel strong,
+:root .project-summary-card>strong,
+:root .project-phase-copy strong {
+  color: var(--text-primary);
+}
+:root .muted,
+:root .brand-light,
+:root .topbar-note,
+:root .topbar-context,
+:root .user-email,
+:root .sidebar-group-label,
+:root .sidebar-bottom small,
+:root .stat-label,
+:root .stat-card small,
+:root .project-copy span,
+:root .activity-copy span,
+:root .activity-copy small,
+:root .task-name small,
+:root .task-due,
+:root .task-results-note,
+:root .task-table-head,
+:root .kanban-card-description,
+:root .kanban-card-meta,
+:root .empty-state p,
+:root .admin-user-identity span,
+:root .admin-user-identity small,
+:root .admin-user-help p,
+:root .overview-panel p:not(.eyebrow),
+:root .overview-panel small,
+:root .overview-note,
+:root .project-summary-card>span,
+:root .project-summary-card>small,
+:root .project-phase-copy small,
+:root .project-phase-progress small {
+  color: var(--text-secondary);
+}
+:root .field input,
+:root .field select,
+:root .field textarea,
+:root .form-row input,
+:root .task-form .field input,
+:root .task-table-row select,
+:root .task-filters .field input,
+:root .task-filters .field select,
+:root .task-description-field textarea,
+:root .comment-form textarea,
+:root .label-create-form input:not([type=color]),
+:root .label-create-form select,
+:root .member-add-form input,
+:root .member-add-form select,
+:root .member-row select,
+:root .theme-picker {
+  color: var(--text-primary);
+  background-color: var(--surface-input);
+  border-color: var(--border-color);
+  color-scheme: inherit;
+}
+:root input::placeholder,
+:root textarea::placeholder { color: var(--text-muted); }
+:root .button-quiet,
+:root .task-view-switch button,
+:root .project-section-nav button,
+:root .theme-picker {
+  color: var(--text-primary);
+  background-color: var(--surface-muted);
+  border-color: var(--border-color);
+}
+:root .sidebar-link { color: var(--text-secondary); }
+:root .sidebar-link.active,
+:root .task-view-switch button.active,
+:root .project-section-nav button.active {
+  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--accent) 17%, var(--surface)) !important;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-color)) !important;
+}
+:root .text-button { color: var(--accent); }
+:root .button-primary { background: #c6f08b; color: #151a10; }
+:root .brand { color: var(--text-primary); }
+:root .issue-modal-backdrop { background: #03060bd9; }
+:root[data-theme="light"] .issue-modal-backdrop { background: #18212b70; }
+:root .theme-picker select { color: inherit; background: transparent; }
+:root .theme-picker select option { color: #18212b; background: #ffffff; }
+:root .topbar { border-bottom-color: var(--border-color); }
+:root .project-mark,
+:root .issue-dot,
+:root .comment-avatar { background: color-mix(in srgb, var(--accent) 15%, var(--surface)); }
+:root .progress-track,
+:root .overview-progress-track,
+:root .overview-workload>div>i { background: color-mix(in srgb, var(--text-muted) 18%, var(--surface)); }
+:root .overview-progress-track>i,
+:root .overview-workload>div>i>b { background: #80ad4b; }
+:root .kanban-card,
+:root .workspace-card,
+:root .stat-card,
+:root .project-summary-card { box-shadow: none; }
+:root[data-theme="light"] .brand-mark { background: #c6f08b; color: #151a10; }
+:root[data-theme="light"] .eyebrow,
+:root[data-theme="light"] .hero .eyebrow,
+:root[data-theme="light"] .stat-icon,
+:root[data-theme="light"] .workspace-icon { color: #547d24; }
+:root[data-theme="light"] .hero h1,
+:root[data-theme="light"] .auth-intro h2 { color: #18212b; }
+:root[data-theme="light"] .hero h1 span,
+:root[data-theme="light"] .auth-intro h2 span { color: #5e842e; }
+:root[data-theme="light"] .auth-intro { border-right-color: var(--border-color); }
+:root[data-theme="light"] .auth-tabs { background: var(--surface-muted); }
+:root[data-theme="light"] .auth-tabs button { color: var(--text-secondary); }
+:root[data-theme="light"] .auth-tabs button.active { background: #e7edf1; color: var(--text-primary); }
+:root[data-theme="light"] .feedback-success { color: #35651f; background: #e9f5df; }
+:root[data-theme="light"] .feedback-error { color: #a4261c; background: #fdecea; }
+:root[data-theme="light"] .notice { color: #805b12; background: #fff6dc; border-color: #f1d48a; }
+:root[data-theme="light"] .notice span { color: #805b12; }
+:root[data-theme="light"] .priority-high,
+:root[data-theme="light"] .priority-highest { color: #b42318; background: #fee4e2; }
+:root[data-theme="light"] .priority-medium { color: #8a5a00; background: #fff1c2; }
+:root[data-theme="light"] .priority-low,
+:root[data-theme="light"] .priority-lowest { color: #175cd3; background: #eaf2ff; }
+:root[data-theme="light"] .admin-role-badge { background: #e8f7dc; color: #365d18; }
+:root[data-theme="light"] .member-role-badge { background: #edf1f5; color: #475569; }
+:root[data-theme="light"] .label-chip { background: #f8fafc; }
+:root[data-theme="light"] .gantt-type-badge { background: #f1f5f9; color: #475569; border-color: #dbe3eb; }
+:root[data-theme="light"] .gantt-row-epic { background: linear-gradient(90deg,#c6f08b25,transparent 75%); }
+:root[data-theme="light"] .gantt-row-story { background: linear-gradient(90deg,#72b8f51c,transparent 75%); }
+:root[data-theme="light"] .gantt-row-epic .gantt-task-label>small { color: #547d24; }
+:root[data-theme="light"] .gantt-row-story .gantt-task-label>small { color: #24689c; }
+:root[data-theme="light"] .gantt-row-overdue .gantt-title-line:after { color: #b42318; }
+:root[data-theme="light"] .gantt-dependencies.has-schedule-conflict { background: #fff4e5; }
+:root[data-theme="light"] .gantt-dependencies.is-blocked.has-schedule-conflict { background: #fdecec; }
+:root[data-theme="light"] .kanban-empty { color: var(--text-muted); border-color: var(--border-color); }
+:root[data-theme="light"] .footer { color: var(--text-muted); }
+@media (prefers-reduced-motion: reduce) {
+  :root *, :root *::before, :root *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
