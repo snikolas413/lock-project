@@ -10,6 +10,7 @@ type Project = { id: string; name: string; key: string; description: string | nu
 type Issue = { id: string; title: string; description: string | null; issue_number: number; type: string; parent_issue_id: string | null; status: string; priority: string; updated_at: string; project_id: string; due_date: string | null; start_date: string | null; end_date: string | null; duration_days: number | null; assignee_id: string | null };
 type TeamMember = { workspace_id: string; user_id: string; role: string };
 type Profile = { id: string; display_name: string | null };
+type AdminUser = { id: string; email: string | null; display_name: string | null; created_at: string; last_sign_in_at: string | null; is_platform_admin: boolean; memberships: { workspace_id: string; workspace_name: string; role: string }[] };
 type IssueComment = { id: string; issue_id: string; author_id: string; body: string; created_at: string };
 type Label = { id: string; project_id: string; name: string; color: string; created_at: string };
 type IssueLabel = { issue_id: string; label_id: string };
@@ -60,9 +61,11 @@ function App() {
   const [teamClientsWorkspace, setTeamClientsWorkspace] = useState<string | null>(null);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [projectSection, setProjectSection] = useState<'summary' | 'tasks' | 'hierarchy' | 'timeline' | 'roadmap'>('tasks');
-  const [activePage, setActivePage] = useState<'overview' | 'projects' | 'tasks' | 'clients' | 'admin'>('overview');
+  const [activePage, setActivePage] = useState<'overview' | 'projects' | 'tasks' | 'clients' | 'admin' | 'users'>('overview');
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -101,6 +104,23 @@ function App() {
       await loadWorkspaces();
     })();
   }, [session]);
+
+  async function loadAdminUsers() {
+    if (!isPlatformAdmin) return;
+    setAdminUsersLoading(true); setError('');
+    const { data, error } = await supabase.functions.invoke('admin-user-management', { body: {} });
+    if (error) {
+      let detail = error.message || 'Não foi possível carregar os usuários.';
+      try { const payload = await error.context?.json(); if (payload?.error) detail = payload.error; } catch { /* resposta sem JSON */ }
+      setError(detail);
+    } else if (data?.error) setError(data.error);
+    else setAdminUsers((data?.users ?? []) as AdminUser[]);
+    setAdminUsersLoading(false);
+  }
+
+  useEffect(() => {
+    if (session && isPlatformAdmin && activePage === 'users') void loadAdminUsers();
+  }, [session, isPlatformAdmin, activePage]);
 
   async function loadWorkspaces() {
     const { data, error } = await supabase.from('workspaces').select('id,name,slug,created_at').order('created_at', { ascending: false });
@@ -506,7 +526,8 @@ function App() {
       <button className={activePage==='clients'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('clients');}}>◎ <span>Clientes</span><small>{clients.length}</small></button>
       <button className={activePage==='tasks'||activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{setActiveProjectId(null);setActivePage('tasks');setIssueProjectFilter('all');setIssueClientFilter('all');}}>☷ <span>Tarefas</span><small>{issues.length}</small></button>
       {(isPlatformAdmin || workspaces.length === 0 || teamMembers.some(member => member.user_id === session.user.id && ['owner', 'admin'].includes(member.role))) && <><div className="sidebar-divider"/><div className="sidebar-group-label">ADMINISTRAÇÃO</div>
-      <button className={activePage==='admin'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('admin');}}>⚙ <span>Times e acessos</span></button></>}
+      <button className={activePage==='admin'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('admin');}}>⚙ <span>Times e acessos</span></button>
+      {isPlatformAdmin && <button className={activePage==='users'&&!activeProjectId?'sidebar-link active':'sidebar-link'} onClick={()=>{closeProject();setActivePage('users');}}>♙ <span>Administração de usuários</span><small>{adminUsers.length}</small></button>}</>}
       <div className="sidebar-divider"/><div className="sidebar-group-label">SEUS PROJETOS</div>
       {projects.slice(0,8).map(project=><button key={project.id} className={'sidebar-project '+(activeProjectId===project.id?'active':'')} onClick={()=>openProject(project.id)}><span>{project.key.slice(0,2)}</span><label>{project.name}</label></button>)}
       <div className="sidebar-bottom"><span className="sidebar-avatar">{(session.user.email?.[0]??'U').toUpperCase()}</span><div><strong>{session.user.user_metadata?.display_name||session.user.email?.split('@')[0]}</strong><small>{session.user.email}</small></div></div>
@@ -754,6 +775,15 @@ function App() {
             </article>) : <div className="empty-state compact-empty"><span className="empty-icon">◷</span><strong>{issues.length ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}</strong><p>{issues.length ? 'Tente ajustar a busca ou os filtros.' : 'Cadastre uma tarefa acima para acompanhar status, prioridade e prazo.'}</p></div>}
           </div></>}
         </section>
+        {activePage === 'users' && isPlatformAdmin && <section className="workspace-management user-admin-page">
+          <div className="section-title"><div><p className="eyebrow">CONTROLE GLOBAL</p><h2>Administração de usuários</h2><p className="muted">Contas cadastradas, acesso aos times e último acesso. As permissões por time são gerenciadas em “Times e acessos”.</p></div><button type="button" className="button button-primary" disabled={adminUsersLoading} onClick={() => void loadAdminUsers()}>{adminUsersLoading ? 'Atualizando…' : 'Atualizar lista'} ↻</button></div>
+          <div className="admin-user-summary"><article className="stat-card"><span className="stat-label">Contas cadastradas</span><strong>{adminUsers.length}</strong></article><article className="stat-card"><span className="stat-label">Com acesso a times</span><strong>{adminUsers.filter(user => user.memberships.length > 0).length}</strong></article><article className="stat-card"><span className="stat-label">Administradores gerais</span><strong>{adminUsers.filter(user => user.is_platform_admin).length}</strong></article></div>
+          {adminUsersLoading && !adminUsers.length ? <div className="loading">Carregando usuários…</div> : adminUsers.length ? <div className="admin-user-list">{adminUsers.map(user => <article className="admin-user-card" key={user.id}>
+            <div className="admin-user-main"><span className="assignee-avatar">{(user.display_name || user.email || 'U').slice(0,1).toUpperCase()}</span><div className="admin-user-identity"><strong>{user.display_name || 'Sem nome definido'}</strong><span>{user.email || 'E-mail indisponível'}</span><small>Cadastrado em {new Intl.DateTimeFormat('pt-BR',{dateStyle:'medium'}).format(new Date(user.created_at))}{user.last_sign_in_at ? ' · Último acesso '+new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(user.last_sign_in_at)) : ' · Ainda não acessou'}</small></div><span className={user.is_platform_admin ? 'admin-role-badge' : 'member-role-badge'}>{user.is_platform_admin ? 'Administrador geral' : 'Usuário'}</span></div>
+            <div className="admin-user-memberships"><strong>Times vinculados</strong>{user.memberships.length ? user.memberships.map(membership => <span className="admin-membership-chip" key={membership.workspace_id}>{membership.workspace_name}<small>{({owner:'Proprietário',admin:'Administrador do time',analyst:'Analista',member:'Membro',viewer:'Visualizador'} as Record<string,string>)[membership.role] || membership.role}</small></span>) : <span className="muted">Sem vínculo com times</span>}</div>
+          </article>)}</div> : <div className="empty-state"><strong>Nenhum usuário encontrado</strong><p>As contas aparecerão aqui após o cadastro ou convite.</p></div>}
+          <div className="admin-user-help"><strong>Como administrar acessos</strong><p>Para convidar alguém, escolher o time e definir o cargo, abra “Times e acessos”. O administrador geral não precisa pertencer a um time e mantém acesso global à plataforma.</p><button type="button" className="button button-secondary" onClick={() => setActivePage('admin')}>Abrir times e permissões ↗</button></div>
+        </section>}
         {activePage === 'admin' && (isPlatformAdmin || workspaces.length === 0 || teamMembers.some(member => member.user_id === session.user.id && ['owner', 'admin'].includes(member.role))) && <section className="workspace-management"><div className="section-title"><div><p className="eyebrow">ESTRUTURA DA OPERAÇÃO</p><h2>Times</h2></div><span className="count">{workspaces.length}</span></div>
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card workspace-card-clickable" key={w.id} role="button" tabIndex={0} onClick={()=>{setSelectedWorkspace(w.id);setTeamClientsWorkspace(w.id);}} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedWorkspace(w.id);document.getElementById('client-management')?.scrollIntoView({behavior:'smooth',block:'start'});}}}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{clients.filter(c=>c.workspace_id===w.id).length} clientes · {projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
           <div className="member-management">
