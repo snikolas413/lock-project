@@ -447,3 +447,23 @@ body:has(.task-edit-modal)::after{content:"";position:fixed;inset:0;z-index:110;
 .gantt-row-task .gantt-bar{height:8px;opacity:.92}
 .gantt-row-overdue .gantt-title-line:after{content:'ATRASADA';margin-left:auto;flex-shrink:0;color:#ff9e91;font-size:9px;font-weight:700}
 @media(max-width:760px){.gantt-title-line{align-items:flex-start;flex-direction:column;gap:4px}.gantt-row-overdue .gantt-title-line:after{margin-left:0}}
+
+
+/* Administração global de usuários */
+.admin-user-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}
+.admin-user-list{display:grid;gap:12px}
+.admin-user-card{border:1px solid var(--border-color,#e5e7eb);border-radius:16px;padding:18px;background:var(--surface,#fff);display:grid;gap:14px}
+.admin-user-main{display:flex;align-items:center;gap:12px;min-width:0}
+.admin-user-identity{display:grid;gap:4px;min-width:0;flex:1}
+.admin-user-identity strong{font-size:14px}
+.admin-user-identity span,.admin-user-identity small{color:var(--muted,#64748b);font-size:12px;overflow-wrap:anywhere}
+.admin-role-badge,.member-role-badge{font-size:11px;font-weight:700;border-radius:999px;padding:6px 9px;white-space:nowrap}
+.admin-role-badge{background:#e8f7dc;color:#365d18}
+.member-role-badge{background:#f1f5f9;color:#475569}
+.admin-user-memberships{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px}
+.admin-user-memberships>strong{margin-right:4px}
+.admin-membership-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border-color,#e5e7eb);border-radius:9px;padding:7px 9px}
+.admin-membership-chip small{color:var(--muted,#64748b)}
+.admin-user-help{margin-top:20px;padding:18px;border-radius:14px;background:var(--surface-subtle,#f8fafc);display:grid;gap:10px}
+.admin-user-help p{margin:0;color:var(--muted,#64748b);font-size:13px}
+@media(max-width:700px){.admin-user-summary{grid-template-columns:1fr}.admin-user-main{align-items:flex-start;flex-wrap:wrap}.admin-user-identity{min-width:calc(100% - 60px)}.admin-user-memberships{align-items:flex-start}}
