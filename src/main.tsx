@@ -67,7 +67,7 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [memberEmailDrafts, setMemberEmailDrafts] = useState<Record<string, string>>({});
-  const [memberRoleDrafts, setMemberRoleDrafts] = useState<Record<string, 'analyst'>>({});
+  const [memberRoleDrafts, setMemberRoleDrafts] = useState<Record<string, 'analyst' | 'viewer'>>({});
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
@@ -766,7 +766,7 @@ function App() {
                 <h4>{workspace.name}</h4>
                 {canManageMembers && <form className="member-add-form" onSubmit={event => { event.preventDefault(); void addWorkspaceMember(workspace.id); }}>
                   <div className="field"><label htmlFor={`member-email-${workspace.id}`}>E-mail da pessoa</label><input id={`member-email-${workspace.id}`} type="email" value={memberEmailDrafts[workspace.id] || ''} onChange={event => setMemberEmailDrafts(current => ({ ...current, [workspace.id]: event.target.value }))} placeholder="pessoa@empresa.com" autoComplete="off" required /></div>
-                  <div className="field"><label htmlFor={`member-role-${workspace.id}`}>Acesso inicial</label><select id={`member-role-${workspace.id}`} value={memberRoleDrafts[workspace.id] || 'analyst'} onChange={event => setMemberRoleDrafts(current => ({ ...current, [workspace.id]: event.target.value as 'analyst' }))}><option value="analyst">Analista</option><option value="viewer">Visualizador</option></select></div>
+                  <div className="field"><label htmlFor={`member-role-${workspace.id}`}>Acesso inicial</label><select id={`member-role-${workspace.id}`} value={memberRoleDrafts[workspace.id] || 'analyst'} onChange={event => setMemberRoleDrafts(current => ({ ...current, [workspace.id]: event.target.value as 'analyst' | 'viewer' }))}><option value="analyst">Analista</option><option value="viewer">Visualizador</option></select></div>
                   <button type="submit" className="button button-primary" disabled={busy || !(memberEmailDrafts[workspace.id] || '').trim()}>{busy ? 'Enviando…' : 'Convidar para o time'} ↗</button>
                   <p className="muted">Se já tiver conta, a pessoa será adicionada na hora. Se for nova, receberá um convite por e-mail.</p>
                 </form>}
