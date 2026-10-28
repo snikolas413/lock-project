@@ -59,8 +59,7 @@ export function AdminUsersSection({
           <p className="eyebrow">CONTROLE GLOBAL</p>
           <h2>Administração de usuários</h2>
           <p className="muted">
-            Contas cadastradas, acesso aos times e último acesso. As permissões por time são
-            gerenciadas em “Times e acessos”.
+            Consulte as contas cadastradas, veja quem já está vinculado a um time e confira o último acesso. As permissões são gerenciadas em “Times e acessos”.
           </p>
         </div>
         <button type="button" className="button button-primary" disabled={loading} onClick={onRefresh}>
@@ -70,16 +69,16 @@ export function AdminUsersSection({
 
       <div className="admin-user-summary">
         <article className="stat-card">
-          <span className="stat-label">Contas cadastradas</span>
+          <span className="stat-label">Total de usuários</span>
           <strong>{users.length}</strong>
         </article>
         <article className="stat-card">
-          <span className="stat-label">Com acesso a times</span>
+          <span className="stat-label">Vinculados a times</span>
           <strong>{users.filter(user => user.memberships.length > 0).length}</strong>
         </article>
         <article className="stat-card">
-          <span className="stat-label">Administradores gerais</span>
-          <strong>{users.filter(user => user.is_platform_admin).length}</strong>
+          <span className="stat-label">Sem vínculo com time</span>
+          <strong>{users.filter(user => user.memberships.length === 0).length}</strong>
         </article>
       </div>
 
