@@ -196,12 +196,21 @@ function App() {
   async function addWorkspaceMember(workspaceId: string) {
     const memberEmail = (memberEmailDrafts[workspaceId] || '').trim().toLowerCase();
     const memberRole = memberRoleDrafts[workspaceId] || 'analyst';
-    if (!memberEmail) { setError('Informe o e-mail da pessoa que deseja adicionar.'); return; }
+    if (!memberEmail) { setError('Informe o e-mail da pessoa que deseja convidar.'); return; }
     setBusy(true); setError(''); setMessage('');
-    const { error } = await (supabase as any).rpc('add_workspace_member_by_email', { target_workspace_id: workspaceId, member_email: memberEmail, member_role: memberRole });
-    if (error) setError(error.message);
-    else { setMemberEmailDrafts(current => ({ ...current, [workspaceId]: '' })); setMessage('Pessoa adicionada ao time com sucesso.'); await loadWorkspaces(); }
-    setBusy(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('invite-workspace-member', { body: { workspace_id: workspaceId, email: memberEmail, role: memberRole } });
+      if (error) {
+        let detail = error.message || 'Não foi possível enviar o convite.';
+        try { const payload = await error.context?.json(); if (payload?.error) detail = payload.error; } catch { /* resposta sem JSON */ }
+        throw new Error(detail);
+      }
+      if (data?.error) throw new Error(data.error);
+      setMemberEmailDrafts(current => ({ ...current, [workspaceId]: '' }));
+      setMessage(data?.status === 'invited' ? 'Convite enviado para ' + memberEmail + '. A pessoa receberá um e-mail para ativar a conta e entrar no time.' : memberEmail + ' já tinha uma conta e foi adicionada ao time.');
+      await loadWorkspaces();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Não foi possível concluir o convite.'); }
+    finally { setBusy(false); }
   }
 
   async function updateMemberRole(member: TeamMember, role: string) {
@@ -749,17 +758,17 @@ function App() {
           {workspaces.length ? <div className="workspace-list">{workspaces.map(w=><article className="workspace-card workspace-card-clickable" key={w.id} role="button" tabIndex={0} onClick={()=>{setSelectedWorkspace(w.id);setTeamClientsWorkspace(w.id);}} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedWorkspace(w.id);document.getElementById('client-management')?.scrollIntoView({behavior:'smooth',block:'start'});}}}><span className="workspace-icon">▦</span><div className="workspace-info"><strong>{w.name}</strong><span>/{w.slug}</span></div><span className="workspace-status">{clients.filter(c=>c.workspace_id===w.id).length} clientes · {projects.filter(p=>p.workspace_id===w.id).length} projetos</span></article>)}</div> : <div className="empty-state"><span className="empty-icon">▦</span><strong>Crie seu primeiro workspace</strong><p>Um espaço para reunir projetos e tarefas da sua equipe.</p></div>}
           <div className="member-management">
             <div className="section-title"><div><p className="eyebrow">ACESSOS</p><h3>Membros e permissões</h3></div><span className="count">{teamMembers.length} vínculos</span></div>
-            <p className="muted">Proprietários administram os membros do próprio time. Analistas trabalham nos projetos e tarefas, sem alterar membros ou permissões. O convite por e-mail será implementado em uma próxima etapa.</p>
+            <p className="muted">Convide pessoas pelo e-mail ou adicione quem já tem conta. O acesso ao time é concedido automaticamente; convites novos chegam por e-mail.</p>
             {workspaces.map(workspace => {
               const members = teamMembers.filter(member => member.workspace_id === workspace.id);
               const canManageMembers = isPlatformAdmin || members.some(member => member.user_id === session?.user.id && ['owner', 'admin'].includes(member.role));
               return <section className="member-workspace" key={workspace.id}>
                 <h4>{workspace.name}</h4>
                 {canManageMembers && <form className="member-add-form" onSubmit={event => { event.preventDefault(); void addWorkspaceMember(workspace.id); }}>
-                  <div className="field"><label htmlFor={`member-email-${workspace.id}`}>Adicionar pessoa pelo e-mail</label><input id={`member-email-${workspace.id}`} type="email" value={memberEmailDrafts[workspace.id] || ''} onChange={event => setMemberEmailDrafts(current => ({ ...current, [workspace.id]: event.target.value }))} placeholder="pessoa@empresa.com" autoComplete="off" required /></div>
-                  <div className="field"><label htmlFor={`member-role-${workspace.id}`}>Acesso inicial</label><select id={`member-role-${workspace.id}`} value={memberRoleDrafts[workspace.id] || 'analyst'} onChange={event => setMemberRoleDrafts(current => ({ ...current, [workspace.id]: event.target.value as 'analyst' }))}><option value="analyst">Analista</option></select></div>
-                  <button type="submit" className="button button-primary" disabled={busy || !(memberEmailDrafts[workspace.id] || '').trim()}>{busy ? 'Adicionando…' : 'Adicionar ao time'} ↗</button>
-                  <p className="muted">A pessoa precisa ter uma conta cadastrada no Lock Project. Convites por e-mail ainda não estão ativos.</p>
+                  <div className="field"><label htmlFor={`member-email-${workspace.id}`}>E-mail da pessoa</label><input id={`member-email-${workspace.id}`} type="email" value={memberEmailDrafts[workspace.id] || ''} onChange={event => setMemberEmailDrafts(current => ({ ...current, [workspace.id]: event.target.value }))} placeholder="pessoa@empresa.com" autoComplete="off" required /></div>
+                  <div className="field"><label htmlFor={`member-role-${workspace.id}`}>Acesso inicial</label><select id={`member-role-${workspace.id}`} value={memberRoleDrafts[workspace.id] || 'analyst'} onChange={event => setMemberRoleDrafts(current => ({ ...current, [workspace.id]: event.target.value as 'analyst' }))}><option value="analyst">Analista</option><option value="viewer">Visualizador</option></select></div>
+                  <button type="submit" className="button button-primary" disabled={busy || !(memberEmailDrafts[workspace.id] || '').trim()}>{busy ? 'Enviando…' : 'Convidar para o time'} ↗</button>
+                  <p className="muted">Se já tiver conta, a pessoa será adicionada na hora. Se for nova, receberá um convite por e-mail.</p>
                 </form>}
                 {members.length ? members.map(member => {
                   const profile = profiles.find(item => item.id === member.user_id);
