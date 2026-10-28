@@ -308,6 +308,18 @@
 }
 
 
+
+/* Modal de edição e leitura de tarefas: mantém o contexto e evita saltos na página */
+.task-edit-modal{position:fixed!important;z-index:120;left:50%;top:50%;transform:translate(-50%,-50%);width:min(920px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto;margin:0!important;padding:22px;background:#111720;border:1px solid #ffffff24;border-radius:16px;box-shadow:0 28px 100px #000b}
+body:has(.task-edit-modal)::after{content:"";position:fixed;inset:0;z-index:110;background:#05070bd9;backdrop-filter:blur(5px)}
+.task-edit-modal .task-form-heading{position:sticky;top:-22px;z-index:2;padding:8px 0 14px;background:#111720;border-bottom:1px solid #ffffff14}
+.task-edit-modal .task-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.task-edit-modal .task-title-field,.task-edit-modal .task-description-field{grid-column:1/-1}
+.issue-modal-header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.kanban-card-title-button{display:block;width:100%;margin:11px 0 8px;padding:0;border:0;background:transparent;color:#e7edf3;text-align:left;font:inherit;font-size:12px;line-height:1.5;font-weight:650;overflow-wrap:anywhere;cursor:pointer}
+.kanban-card-title-button:hover{color:#c6f08b}
+@media(max-width:600px){.task-edit-modal{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);padding:16px}.task-edit-modal .task-form-grid{grid-template-columns:minmax(0,1fr)}.task-edit-modal .task-title-field,.task-edit-modal .task-description-field{grid-column:auto}.task-edit-modal .task-form-heading{top:-16px}.issue-modal-header-actions{gap:6px}}
+
 /* Evita que o cabeçalho da tabela Lista se sobreponha ao cabeçalho principal */
 .task-table-head{position:relative;top:auto;z-index:1}
 @media(max-width:900px){.task-table-head{position:relative;top:auto;z-index:1}}
