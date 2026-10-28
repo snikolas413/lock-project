@@ -532,3 +532,103 @@ body:has(.task-edit-modal)::after{content:"";position:fixed;inset:0;z-index:110;
 .overview-workload>div>i>b{background:#79a84a}
 @media(max-width:850px){.overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-insights-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:520px){.overview-kpis article{padding:13px}.overview-kpis article>strong{font-size:25px}.overview-panel{padding:14px}.overview-project-list>button{grid-template-columns:minmax(95px,1.1fr) minmax(50px,.8fr) 34px;gap:8px}.overview-alert-row{grid-template-columns:26px minmax(0,1fr) auto;gap:7px}.overview-alert-copy>small{overflow-wrap:anywhere}.overview-bars{gap:5px}.overview-bars>div>small{font-size:8px}}
+
+
+/* Theme switcher: shared palette for all application surfaces. */
+:root[data-theme="light"] { color-scheme: light; background: #f4f6f8; color: #18212b; }
+:root[data-theme="light"] body { background: radial-gradient(ellipse at 50% -15%, #c6f08b30, transparent 42%), #f4f6f8; color: #18212b; }
+:root[data-theme="light"] .topbar { border-bottom-color: #dfe4e9; }
+:root[data-theme="light"] .brand { color: #18212b; }
+:root[data-theme="light"] .brand-light,
+:root[data-theme="light"] .topbar-note,
+:root[data-theme="light"] .topbar-context,
+:root[data-theme="light"] .topbar-user,
+:root[data-theme="light"] .muted,
+:root[data-theme="light"] .dashboard-heading .muted,
+:root[data-theme="light"] .stat-card small,
+:root[data-theme="light"] .project-copy span,
+:root[data-theme="light"] .activity-copy span,
+:root[data-theme="light"] .activity-copy small,
+:root[data-theme="light"] .task-name small,
+:root[data-theme="light"] .task-due,
+:root[data-theme="light"] .comment-meta time,
+:root[data-theme="light"] .overview-note,
+:root[data-theme="light"] .overview-workload>div>span>small { color: #647181; }
+:root[data-theme="light"] .button-quiet,
+:root[data-theme="light"] .sidebar-link,
+:root[data-theme="light"] .task-view-switch button,
+:root[data-theme="light"] .text-button { color: #344152; background: #ffffff; border-color: #d9e0e7; }
+:root[data-theme="light"] .button-quiet:hover,
+:root[data-theme="light"] .sidebar-link:hover,
+:root[data-theme="light"] .task-view-switch button:hover { background: #eef2f5; }
+:root[data-theme="light"] .content-panel,
+:root[data-theme="light"] .dashboard-section,
+:root[data-theme="light"] .workspace-management,
+:root[data-theme="light"] .stat-card,
+:root[data-theme="light"] .project-row,
+:root[data-theme="light"] .activity-row,
+:root[data-theme="light"] .progress-card,
+:root[data-theme="light"] .workspace-card,
+:root[data-theme="light"] .task-form,
+:root[data-theme="light"] .task-table,
+:root[data-theme="light"] .task-table-head,
+:root[data-theme="light"] .task-table-row,
+:root[data-theme="light"] .kanban-column,
+:root[data-theme="light"] .kanban-card,
+:root[data-theme="light"] .issue-modal,
+:root[data-theme="light"] .comment-item,
+:root[data-theme="light"] .label-management,
+:root[data-theme="light"] .overview-panel,
+:root[data-theme="light"] .overview-kpis article,
+:root[data-theme="light"] .overview-alert-row,
+:root[data-theme="light"] .overview-project-list>button,
+:root[data-theme="light"] .overview-deadline-row,
+:root[data-theme="light"] .overview-stale-row,
+:root[data-theme="light"] .overview-workload>div,
+:root[data-theme="light"] .auth-card,
+:root[data-theme="light"] .workspace-list { background-color: #ffffff; color: #18212b; border-color: #dfe5eb; }
+:root[data-theme="light"] .product-sidebar { background: #ffffff; border-right-color: #dfe5eb; }
+:root[data-theme="light"] .sidebar-group-label,
+:root[data-theme="light"] .sidebar-bottom small { color: #788494; }
+:root[data-theme="light"] .sidebar-link.active,
+:root[data-theme="light"] .task-view-switch button.active { color: #26331b; background: #e8f5d7; border-color: #cde5ad; }
+:root[data-theme="light"] .sidebar-project { color: #344152; }
+:root[data-theme="light"] .sidebar-project:hover { background: #f1f4f6; }
+:root[data-theme="light"] .section-title h2,
+:root[data-theme="light"] .dashboard-heading h1,
+:root[data-theme="light"] .stat-card strong,
+:root[data-theme="light"] .project-copy strong,
+:root[data-theme="light"] .activity-copy strong,
+:root[data-theme="light"] .task-name strong,
+:root[data-theme="light"] .kanban-card-title,
+:root[data-theme="light"] .issue-modal-header h2,
+:root[data-theme="light"] .comment-meta strong,
+:root[data-theme="light"] .overview-panel h3,
+:root[data-theme="light"] .overview-panel strong,
+:root[data-theme="light"] .auth-card h2 { color: #18212b; }
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] .field input,
+:root[data-theme="light"] .field select,
+:root[data-theme="light"] .field textarea,
+:root[data-theme="light"] .task-filters .field input,
+:root[data-theme="light"] .task-filters .field select,
+:root[data-theme="light"] .comment-form textarea,
+:root[data-theme="light"] .label-create-form input:not([type=color]),
+:root[data-theme="light"] .label-create-form select { color: #18212b; background-color: #ffffff; border-color: #cbd5df; }
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder { color: #8994a2; }
+:root[data-theme="light"] .kanban-card-description,
+:root[data-theme="light"] .comment-content p,
+:root[data-theme="light"] .empty-state p,
+:root[data-theme="light"] .notice span { color: #5f6b79; }
+:root[data-theme="light"] .kanban-column-heading,
+:root[data-theme="light"] .task-table-head { background: #f2f5f7; }
+:root[data-theme="light"] .issue-modal-backdrop { background: #18212b70; }
+:root[data-theme="light"] .theme-picker { color: #344152; background: #ffffff; border-color: #d9e0e7; }
+.theme-picker { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid #ffffff1c; border-radius: 9px; background: #ffffff09; color: #d9dde3; }
+.theme-picker>span { font-size: 15px; line-height: 1; }
+.theme-picker select { max-width: 112px; padding: 4px 2px; border: 0; outline: 0; background: transparent; color: inherit; font-size: 11px; font-weight: 650; cursor: pointer; }
+.theme-picker select option { color: #18212b; background: #ffffff; }
+@media(max-width:680px) { .theme-picker { gap: 4px; padding: 5px 6px; } .theme-picker select { max-width: 84px; font-size: 10px; } }
