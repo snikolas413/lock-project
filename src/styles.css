@@ -223,7 +223,8 @@
 .sidebar-bottom{display:flex;align-items:center;gap:9px;margin-top:auto;padding:14px 6px 4px;border-top:1px solid #ffffff12;min-width:0}.sidebar-avatar{display:grid;place-items:center;width:30px;height:30px;flex-shrink:0;border-radius:9px;background:#c6f08b;color:#17200f;font-weight:800;font-size:11px}.sidebar-bottom>div{display:grid;gap:3px;min-width:0}.sidebar-bottom strong{font-size:10px;color:#dfe5ec}.sidebar-bottom small{font-size:9px;color:#727d8a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .content-panel{border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;min-height:0}.dashboard{padding:22px 0}
 .page-project .dashboard-columns,.page-project .stats-grid{display:none}.page-tasks .dashboard-columns,.page-tasks .stats-grid,.page-tasks>.dashboard-heading{display:none}.page-tasks .task-management{margin-top:0}
-.page-clients .dashboard-heading,.page-clients .stats-grid,.page-clients .dashboard-section:not(:first-child){display:none}.page-clients .dashboard-columns{display:block}.page-clients .dashboard-columns>.dashboard-section:first-child>*:not(.client-management){display:none}.page-clients .client-management{display:block;margin-top:0}.page-clients .create-project-form{display:none}
+.page-overview .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;margin-inline:auto}.page-overview .dashboard-columns,.page-overview .task-management{display:none!important}
+.page-clients .dashboard-heading,.page-clients .stats-grid,.page-clients .dashboard-section:not(:first-child){display:none}.page-clients .dashboard-columns{display:block}.page-clients .dashboard-columns>.dashboard-section:first-child>*:not(.client-management){display:none}.page-clients .client-management{display:block;margin-top:0}.page-clients .create-project-form,.page-clients .task-management{display:none!important}
 .page-projects .dashboard-heading,.page-projects .stats-grid,.page-projects .dashboard-columns>.dashboard-section:nth-child(2),.page-projects .task-management{display:none}.page-projects .dashboard-columns{display:block}.page-projects .dashboard-columns>.dashboard-section:first-child .client-management,.page-projects .dashboard-columns>.dashboard-section:first-child .create-project-form{display:none}.page-projects .dashboard-columns>.dashboard-section:first-child .project-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.page-projects .project-row{min-height:90px;border:1px solid #ffffff12;border-radius:10px;background:#10151d;padding:16px}.page-projects .section-title{margin-bottom:16px}
 @media(max-width:850px){.app-shell{padding:0 15px}.product-sidebar{position:sticky;top:64px;width:100%;height:auto;bottom:auto;padding:8px 0;display:flex;flex-direction:row;gap:5px;overflow-x:auto;border-right:0;border-bottom:1px solid #ffffff12}.sidebar-group-label,.sidebar-divider,.sidebar-project,.sidebar-bottom{display:none}.sidebar-link{width:auto;flex:0 0 auto;padding:10px 12px;font-size:11px}.sidebar-link small{display:none}.topbar-context{margin-left:12px;padding-left:12px}.topbar-user{display:none}}
 
@@ -467,3 +468,11 @@ body:has(.task-edit-modal)::after{content:"";position:fixed;inset:0;z-index:110;
 .admin-user-help{margin-top:20px;padding:18px;border-radius:14px;background:var(--surface-subtle,#f8fafc);display:grid;gap:10px}
 .admin-user-help p{margin:0;color:var(--muted,#64748b);font-size:13px}
 @media(max-width:700px){.admin-user-summary{grid-template-columns:1fr}.admin-user-main{align-items:flex-start;flex-wrap:wrap}.admin-user-identity{min-width:calc(100% - 60px)}.admin-user-memberships{align-items:flex-start}}
+
+
+/* Dedicated user administration screen: show only user management, not dashboard/operations content. */
+.page-users>.dashboard-heading,.page-users>.stats-grid,.page-users>.dashboard-columns,.page-users>.task-management{display:none!important}
+.page-users .user-admin-page{margin-top:0}
+.page-users .user-admin-page .section-title{align-items:flex-start;gap:18px}
+.page-users .user-admin-page .admin-user-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:620px){.page-overview .stats-grid,.page-users .user-admin-page .admin-user-summary{grid-template-columns:1fr 1fr}.page-users .user-admin-page .section-title{flex-direction:column;align-items:stretch}}
