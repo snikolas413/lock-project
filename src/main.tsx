@@ -537,11 +537,9 @@ function App() {
     <section className="content-panel">
       {!ready ? <div className="loading">Preparando seu espaço…</div> : session ? <div className={'dashboard dashboard-home page-'+activePage+(activeProjectId?' page-project project-section-'+projectSection:'')}>
         <div className="dashboard-heading"><div><p className="eyebrow"><span className="eyebrow-dot"/> {activeProjectId ? 'ÁREA DO PROJETO' : 'VISÃO GERAL'}</p><h1>{activeProjectId ? projects.find(project => project.id === activeProjectId)?.name || 'Projeto' : `Bom te ver, ${session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'por aí'}.`}</h1><p className="muted">{activeProjectId ? `${projects.find(project => project.id === activeProjectId)?.key || ''} · ${clients.find(client => client.id === projects.find(project => project.id === activeProjectId)?.client_id)?.name || 'Sem cliente'}` : 'Aqui está um panorama do que está acontecendo nos seus espaços.'}</p></div><span className="avatar">{(session.user.email?.[0] ?? 'L').toUpperCase()}</span></div>
-        {!activeProjectId && <><div className="stats-grid">
-          <article className="stat-card"><span className="stat-icon">▦</span><span className="stat-label">Times</span><strong>{workspaces.length}</strong><small>Equipes cadastradas</small></article>
-          <article className="stat-card"><span className="stat-icon">◇</span><span className="stat-label">Clientes</span><strong>{clients.length}</strong><small>Contas atendidas pelos times</small></article>
-          <article className="stat-card"><span className="stat-icon">◷</span><span className="stat-label">Projetos</span><strong>{projects.length}</strong><small>Projetos dentro dos clientes</small></article>
-          <article className="stat-card"><span className="stat-icon">✓</span><span className="stat-label">Tarefas abertas</span><strong>{issues.filter(i => !['done','completed','closed','concluido','concluído'].includes(i.status.toLowerCase())).length}</strong><small>Precisam de atenção</small></article>
+        {!activeProjectId && <><div className="stats-grid overview-summary-grid">
+          <article className="stat-card"><span className="stat-icon">◇</span><span className="stat-label">Clientes</span><strong>{clients.length}</strong><small>Total de clientes cadastrados</small></article>
+          <article className="stat-card"><span className="stat-icon">◷</span><span className="stat-label">Projetos</span><strong>{projects.length}</strong><small>Total de projetos cadastrados</small></article>
         </div>
         <div className="dashboard-columns">
           <section className="dashboard-section"><div className="section-title"><div><p className="eyebrow">SEUS PROJETOS</p><h2>Projetos recentes</h2></div><span className="count">{projects.length}</span></div>
